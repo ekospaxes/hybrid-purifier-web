@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { ChevronRight, Wind, Zap, Activity, Sun } from 'lucide-react';
+import { Link } from 'react-router-dom'; // Ensure Link is imported
 import NeonGrid from '../../../components/ui/NeonGrid';
 import { AnimatedTitle } from '../../../components/ui/AnimatedText';
 
@@ -54,27 +55,35 @@ const Hero = () => {
           </span>
         </motion.p>
 
-        {/* Action Buttons */}
+        {/* --- BUTTONS SECTION (FIXED) --- */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7 }}
           className="flex flex-col md:flex-row gap-4 justify-center items-center"
         >
-          <button className="group relative px-8 py-4 bg-eko-emerald text-black font-bold rounded-full overflow-hidden transition-all hover:scale-105 hover:shadow-[0_0_20px_rgba(16,185,129,0.4)]">
-            <div className="absolute inset-0 bg-white/40 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-            <span className="relative flex items-center gap-2">
-              Launch Simulator <Activity className="w-4 h-4" />
-            </span>
-          </button>
+          {/* Simulator Button */}
+          <Link to="/simulator">
+            <button className="group relative px-8 py-4 bg-eko-emerald text-black font-bold rounded-full overflow-hidden transition-all hover:scale-105 hover:shadow-[0_0_20px_rgba(16,185,129,0.4)]">
+              <div className="absolute inset-0 bg-white/40 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+              <span className="relative flex items-center gap-2">
+                Launch Simulator <Activity className="w-4 h-4" />
+              </span>
+            </button>
+          </Link>
           
-          <button className="px-8 py-4 text-white border border-white/20 rounded-full hover:bg-white/5 transition-all font-medium backdrop-blur-md">
-            View Technical Specs
-          </button>
+          {/* Specs Button */}
+          <Link to="/specs">
+            <button className="px-8 py-4 text-white border border-white/20 rounded-full hover:bg-white/5 transition-all font-medium backdrop-blur-md">
+              View Technical Specs
+            </button>
+          </Link>
         </motion.div>
+        {/* --- END BUTTONS --- */}
+
       </div>
 
-      {/* Bottom Stats - Updated for Solar */}
+      {/* Bottom Stats */}
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -85,7 +94,7 @@ const Hero = () => {
           {[
             { label: 'PM2.5 REMOVAL', val: '99.9%', icon: Wind },
             { label: 'O₂ GENERATION', val: '64g/day', icon: Zap },
-            { label: 'SOLAR READY', val: '500W', icon: Sun }, // <--- Updated
+            { label: 'SOLAR READY', val: '500W', icon: Sun },
           ].map((stat, i) => (
             <div key={i} className="flex flex-col items-center gap-1">
               <stat.icon className="w-4 h-4 text-eko-lime opacity-80" />

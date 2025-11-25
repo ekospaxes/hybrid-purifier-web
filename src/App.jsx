@@ -1,11 +1,29 @@
 import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'; // Import Router
 import Lenis from 'lenis';
-import Navbar from './layout/Navbar/Navbar';
-import Footer from './layout/Footer/Footer'; // <--- Import Footer
-import Home from './pages/Home/Home'; // We need to update Home to include Specs
 import 'lenis/dist/lenis.css';
 
-function App() {
+// Components
+import Navbar from './layout/Navbar/Navbar';
+import Footer from './layout/Footer/Footer';
+
+// Pages
+import Home from './pages/Home/Home';
+import ComingSoon from './pages/ComingSoon/ComingSoon';
+import Simulator from './pages/Simulator/Simulator';
+import SpecsPage from './pages/SpecsPage/SpecsPage';
+import DashboardPage from './pages/Dashboard/DashboardPage';
+
+// ScrollToTop Helper: Ensures new pages start at the top
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+};
+
+function AppContent() {
   useEffect(() => {
     const lenis = new Lenis({
       duration: 1.2,
@@ -17,20 +35,36 @@ function App() {
       lenis.raf(time);
       requestAnimationFrame(raf);
     }
-
     requestAnimationFrame(raf);
-
     return () => lenis.destroy();
   }, []);
 
   return (
     <div className="antialiased selection:bg-eko-emerald/30 selection:text-white bg-black">
       <div className="grain-overlay" />
-      <Navbar />
-      <Home />
-      <Footer /> {/* <--- Add Footer here */}
+      <ScrollToTop />
+      
+      {/* Navbar is inside Router so links work */}
+      <Navbar /> 
+
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/coming-soon" element={<ComingSoon />} />
+        <Route path="/simulator" element={<Simulator />} />
+        <Route path="/specs" element={<SpecsPage />} />
+        <Route path="/dashboard" element={<DashboardPage />} />
+      </Routes>
+
+      <Footer />
     </div>
-    
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <AppContent />
+    </Router>
   );
 }
 
