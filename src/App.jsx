@@ -9,7 +9,6 @@ import Footer from './layout/Footer/Footer';
 import ProductReveal from './components/ProductReveal';
 
 // --- PAGES ---
-// Ensure these files exist in your src/pages/ folder
 import Home from './pages/Home/Home';
 import ComingSoon from './pages/ComingSoon/ComingSoon';
 import Simulator from './pages/Simulator/Simulator';
@@ -30,13 +29,14 @@ function AppContent() {
   const location = useLocation();
 
   useEffect(() => {
-    // FIX: Disable Lenis smooth scrolling ONLY on the 3D Reveal page.
-    // The 3D library (Drei ScrollControls) needs native scroll control to work.
+    // 1. DISABLE SMOOTH SCROLL ON 3D PAGES
+    // We disable Lenis on '/reveal' because the 3D sticky scroll relies on native browser behavior.
     if (location.pathname === '/reveal') return;
 
+    // 2. CONFIGURE LENIS (Luxurious Smooth Scroll)
     const lenis = new Lenis({
       duration: 1.2,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // "Expo Out" easing
       smoothWheel: true,
       touchMultiplier: 2,
     });
@@ -48,20 +48,19 @@ function AppContent() {
     
     requestAnimationFrame(raf);
 
-    // Cleanup Lenis when leaving the page or component unmounts
     return () => {
       lenis.destroy();
     };
-  }, [location.pathname]); // Re-run this check whenever the URL changes
+  }, [location.pathname]);
 
   return (
-    <div className="antialiased selection:bg-green-500/30 selection:text-white bg-black min-h-screen flex flex-col">
-      {/* Cinematic Grain Overlay */}
-      <div className="grain-overlay fixed inset-0 pointer-events-none z-[9999]" />
+    <div className="antialiased selection:bg-emerald-500/30 selection:text-white bg-[#050505] min-h-screen flex flex-col">
+      {/* Cinematic Grain Overlay (Optional) */}
+      <div className="fixed inset-0 pointer-events-none z-[9999] opacity-[0.03] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] mix-blend-overlay" />
       
       <ScrollToTop />
       
-      {/* Navbar sits on top of everything */}
+      {/* Navbar - Fixed Z-Index to sit above 3D canvas */}
       <div className="relative z-50">
         <Navbar />
       </div>
@@ -69,18 +68,18 @@ function AppContent() {
       <main className="flex-grow">
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/reveal" element={<ProductReveal />} /> {/* The 3D Page */}
           <Route path="/specs" element={<SpecsPage />} />
-          <Route path="/reveal" element={<ProductReveal />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/simulator" element={<Simulator />} />
           <Route path="/coming-soon" element={<ComingSoon />} />
           
-          {/* Fallback for unknown routes */}
+          {/* Fallback */}
           <Route path="*" element={<Home />} /> 
         </Routes>
       </main>
 
-      {/* Footer is visible on all pages, including Reveal */}
+      {/* Footer */}
       <div className="relative z-50">
         <Footer />
       </div>
