@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, useScroll, useTransform, useSpring, useMotionValue } from 'framer-motion';
+import { motion, useSpring, useTransform, useMotionValue } from 'framer-motion';
 import { 
   ArrowLeft, Ruler, Zap, Container, Wifi, Layers, Clock,
   Droplets, Wind, Activity, Cpu, Database, Thermometer,
@@ -106,66 +106,94 @@ const PerformanceCard = ({ icon: Icon, value, unit, label, description, delay, v
   );
 };
 
-// --- NEW: HOLOGRAPHIC 3D SECTION ---
+// --- 3D ARCHITECTURE COMPONENTS ---
 
-const HoloPlate = ({ z, color, label, sub, delay }) => {
+// 1. The Steel Chassis (Frame)
+const Chassis = () => (
+  <div className="absolute inset-0 pointer-events-none" style={{ transformStyle: 'preserve-3d' }}>
+    {/* Vertical Pillars */}
+    <div className="absolute top-[-200px] left-[-10px] w-2 h-[600px] bg-white/10" style={{ transform: 'translateZ(-150px)' }} />
+    <div className="absolute top-[-200px] right-[-10px] w-2 h-[600px] bg-white/10" style={{ transform: 'translateZ(-150px)' }} />
+    <div className="absolute top-[-200px] left-[-10px] w-2 h-[600px] bg-white/10" style={{ transform: 'translateZ(150px)' }} />
+    <div className="absolute top-[-200px] right-[-10px] w-2 h-[600px] bg-white/10" style={{ transform: 'translateZ(150px)' }} />
+    
+    {/* Base Platform */}
+    <div className="absolute bottom-[-100px] left-[-20px] right-[-20px] h-4 bg-white/20 rounded-lg" style={{ transform: 'translateY(180px) rotateX(90deg)' }} />
+  </div>
+);
+
+// 2. Volumetric Slab (Thick Layer)
+const VolumetricSlab = ({ z, color, label, sub, delay, thickness = 20, isLiquid = false }) => {
   return (
     <motion.div
-      style={{ 
-        transform: `translateZ(${z}px)`,
-        boxShadow: `0 0 15px ${color}20, inset 0 0 20px ${color}10`
-      }}
-      initial={{ opacity: 0, scale: 0.5 }}
+      style={{ transform: `translateZ(${z}px)` }}
+      initial={{ opacity: 0, scale: 0.8 }}
       whileInView={{ opacity: 1, scale: 1 }}
       transition={{ delay, duration: 0.8 }}
-      className="absolute w-64 h-64 md:w-80 md:h-80 rounded-2xl border border-white/20 bg-black/40 backdrop-blur-sm flex items-center justify-center group hover:border-white/50 transition-colors duration-300"
+      className="absolute w-64 h-64 md:w-80 md:h-80 group"
     >
-      {/* Glowing Rim */}
-      <div className="absolute inset-0 rounded-2xl border border-white/5 opacity-50" style={{ borderColor: color }} />
-      
-      {/* Inner Tech Grid */}
-      <div className="absolute inset-4 border border-white/5 rounded-xl overflow-hidden opacity-30">
-        <div className="w-full h-full bg-[linear-gradient(rgba(255,255,255,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.1)_1px,transparent_1px)] bg-[size:20px_20px]" />
+      {/* MAIN PLATE */}
+      <div 
+        className="absolute inset-0 rounded-xl border backdrop-blur-md transition-all duration-300 group-hover:brightness-125"
+        style={{ 
+          backgroundColor: isLiquid ? `${color}10` : '#0a0a0a',
+          borderColor: `${color}40`,
+          boxShadow: `0 0 15px ${color}10, inset 0 0 30px ${color}05`
+        }}
+      >
+        {/* Tech Pattern inside */}
+        <div 
+          className="absolute inset-2 opacity-30" 
+          style={{ 
+            backgroundImage: isLiquid 
+              ? `radial-gradient(circle, ${color}40 2px, transparent 3px)` 
+              : `linear-gradient(${color}20 1px, transparent 1px), linear-gradient(90deg, ${color}20 1px, transparent 1px)`,
+            backgroundSize: isLiquid ? '15px 15px' : '30px 30px'
+          }} 
+        />
+        
+        {/* "Thickness" Sides (Pseudo-3D) */}
+        <div 
+          className="absolute top-full left-0 w-full h-4 bg-white/5 origin-top transform rotateX(-90deg)"
+          style={{ backgroundColor: `${color}20` }}
+        />
+        <div 
+          className="absolute top-0 -right-4 w-4 h-full bg-white/5 origin-left transform rotateY(90deg)"
+          style={{ backgroundColor: `${color}20` }}
+        />
       </div>
 
-      {/* Center Core Hole */}
-      <div className="w-16 h-16 rounded-full border border-white/10 bg-black/80 shadow-inner flex items-center justify-center relative">
-         <div className="w-12 h-12 rounded-full border border-dashed border-white/30 animate-spin-slow" style={{ borderColor: color }} />
-      </div>
-
-      {/* Floating Label */}
+      {/* Floating Label (Connected to corner) */}
       <motion.div 
         initial={{ opacity: 0, x: -20 }}
         whileInView={{ opacity: 1, x: 0 }}
         transition={{ delay: delay + 0.5 }}
-        className="absolute -right-48 w-40 flex items-center gap-3"
+        className="absolute -right-48 top-4 w-40 flex items-center gap-3"
       >
-        <div className="h-[1px] w-12 bg-gradient-to-r from-white/50 to-transparent" />
+        <div className="h-[1px] w-16 bg-gradient-to-r from-white/50 to-transparent" />
         <div className="text-left">
-          <h4 className="text-white font-bold text-sm tracking-wide drop-shadow-md" style={{ textShadow: `0 0 10px ${color}` }}>{label}</h4>
-          <p className="text-[10px] text-gray-400 font-mono uppercase">{sub}</p>
+          <h4 className="text-white font-bold text-sm tracking-wide uppercase">{label}</h4>
+          <p className="text-[10px] text-gray-400 font-mono">{sub}</p>
         </div>
       </motion.div>
     </motion.div>
   );
 };
 
+// 3. Interactive 3D Controller
 const InteractiveStack = () => {
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
   
-  // Smooth spring physics for rotation
-  const rotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], [45, 75]), { stiffness: 150, damping: 20 });
-  const rotateZ = useSpring(useTransform(mouseX, [-0.5, 0.5], [-35, -55]), { stiffness: 150, damping: 20 });
+  const rotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], [60, 80]), { stiffness: 100, damping: 20 });
+  const rotateZ = useSpring(useTransform(mouseX, [-0.5, 0.5], [-40, -50]), { stiffness: 100, damping: 20 });
 
   const handleMouseMove = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const width = rect.width;
     const height = rect.height;
-    const mouseXVal = (e.clientX - rect.left) / width - 0.5;
-    const mouseYVal = (e.clientY - rect.top) / height - 0.5;
-    mouseX.set(mouseXVal);
-    mouseY.set(mouseYVal);
+    mouseX.set((e.clientX - rect.left) / width - 0.5);
+    mouseY.set((e.clientY - rect.top) / height - 0.5);
   };
 
   const handleMouseLeave = () => {
@@ -175,39 +203,41 @@ const InteractiveStack = () => {
 
   return (
     <div 
-      className="h-[800px] flex items-center justify-center relative perspective-1000 overflow-visible cursor-crosshair"
+      className="h-[900px] flex items-center justify-center relative perspective-1000 overflow-visible cursor-crosshair"
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
     >
       {/* Atmosphere */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-eko-emerald/5 to-transparent pointer-events-none" />
       
-      {/* Instruction Hint */}
-      <div className="absolute top-10 left-1/2 -translate-x-1/2 text-white/20 text-xs font-mono border border-white/10 px-3 py-1 rounded-full">
-        INTERACTIVE 3D VIEW
+      <div className="absolute top-10 left-1/2 -translate-x-1/2 text-white/30 text-[10px] font-mono border border-white/10 px-3 py-1 rounded-full backdrop-blur-md">
+        INTERACTIVE EXPLODED VIEW • DRAG TO ROTATE
       </div>
 
       <motion.div 
         style={{ rotateX, rotateZ, transformStyle: 'preserve-3d' }}
         className="relative w-64 h-64 md:w-80 md:h-80"
       >
-        {/* Airflow Stream (Center Line) */}
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-[600px] bg-gradient-to-t from-transparent via-eko-emerald/50 to-transparent blur-sm" style={{ transform: 'translateZ(100px) rotateX(-90deg)' }} />
+        {/* The Steel Frame */}
+        <Chassis />
 
-        {/* 5. BIO CORE (Top) */}
-        <HoloPlate z={200} color="#10B981" label="Bio-Core Matrix" sub="Living Algae Culture" delay={0.1} />
+        {/* 5. BIO CORE (Thick Liquid Tank) */}
+        <VolumetricSlab z={250} color="#10B981" label="Bio-Core Matrix" sub="120L Algae Culture" delay={0.1} isLiquid={true} />
         
         {/* 4. PCO */}
-        <HoloPlate z={100} color="#8b5cf6" label="PCO Reactor" sub="UV-A Oxidation" delay={0.2} />
+        <VolumetricSlab z={140} color="#8b5cf6" label="PCO Reactor" sub="UV-A + TiO₂ Grid" delay={0.2} />
         
         {/* 3. HEPA */}
-        <HoloPlate z={0} color="#06b6d4" label="HEPA H13" sub="0.3µm Filtration" delay={0.3} />
+        <VolumetricSlab z={30} color="#06b6d4" label="HEPA H13" sub="Medical Grade Fiber" delay={0.3} />
         
         {/* 2. ESP */}
-        <HoloPlate z={-100} color="#f59e0b" label="ESP Grid" sub="High-Voltage Static" delay={0.4} />
+        <VolumetricSlab z={-80} color="#f59e0b" label="ESP Ionizer" sub="6kV Static Plates" delay={0.4} />
         
         {/* 1. BASE */}
-        <HoloPlate z={-200} color="#3b82f6" label="Cyclone Base" sub="Pre-Separator Intake" delay={0.5} />
+        <VolumetricSlab z={-190} color="#3b82f6" label="Cyclone Intake" sub="Heavy Particle Trap" delay={0.5} />
+
+        {/* Central Axis (The "Spine" of the machine) */}
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-[600px] bg-white/10" style={{ transform: 'translateZ(0px) rotateX(-90deg)' }} />
 
       </motion.div>
     </div>
@@ -349,13 +379,13 @@ const SpecsPage = () => {
           </div>
         </div>
 
-        {/* --- INTERACTIVE 3D STACK (New Design) --- */}
-        <div className="px-6 mb-24 mt-32">
+        {/* --- NEW: SYSTEM ANATOMY (3D EXPLODED VIEW) --- */}
+        <div className="px-6 mb-32 mt-32">
           <div className="max-w-7xl mx-auto text-center mb-16">
             <h2 className="text-4xl md:text-6xl font-bold mb-4 tracking-tighter">
               System <span className="text-transparent bg-clip-text bg-gradient-to-r from-eko-emerald to-cyan-400">Anatomy</span>
             </h2>
-            <p className="text-white/40 font-mono text-sm">Drag cursor to inspect the 5-stage fusion core</p>
+            <p className="text-white/40 font-mono text-sm">5-Stage Hybrid Filtration Stack Dissection</p>
           </div>
           <InteractiveStack />
         </div>
