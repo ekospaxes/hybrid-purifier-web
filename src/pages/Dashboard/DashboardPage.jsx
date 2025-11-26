@@ -31,10 +31,10 @@ const getPollutionStatus = (pm25) => {
 };
 
 // --- ROBUST DATA ENGINE ---
-// If API is 0 or null, use base + pollution factor to generate a realistic number
 const getRobustValue = (val, baseLevel, pollutionFactor) => {
   const num = parseFloat(val);
-  if (!isNaN(num) && num > 0.1) return num.toFixed(1);
+  // Relaxed check: allow 0, but check for NaN or null
+  if (!isNaN(num) && val !== null && val !== undefined) return num.toFixed(1);
   
   // Fallback Simulation
   const simulated = baseLevel + (pollutionFactor * 0.05) + (Math.random() * (baseLevel * 0.1));
@@ -111,18 +111,18 @@ const ChemicalCard = ({ label, formula, value, unit, limit }) => {
   const color = !isSafe ? "text-red-500" : "text-eko-emerald";
   
   return (
-    <div className="bg-white/5 border border-white/10 p-4 rounded-xl flex justify-between items-center hover:bg-white/10 hover:border-eko-emerald/30 transition-all group">
-      <div>
-        <div className="text-[10px] text-gray-500 font-mono mb-1 uppercase tracking-wider">{label}</div>
+    <div className="bg-[#111] border border-white/10 p-6 rounded-2xl flex justify-between items-center hover:bg-white/5 hover:border-eko-emerald/30 transition-all group h-full shadow-lg">
+      <div className="flex flex-col justify-center">
+        <div className="text-xs text-gray-400 font-mono mb-2 uppercase tracking-widest">{label}</div>
         <div className="flex items-baseline gap-1">
-           <span className="text-xl font-bold text-white group-hover:text-eko-neon transition-colors">{formula}</span>
+           <span className="text-3xl font-bold text-white group-hover:text-eko-neon transition-colors">{formula}</span>
         </div>
       </div>
-      <div className="text-right">
-         <div className={`text-2xl font-mono font-bold ${color}`}>
+      <div className="text-right flex flex-col justify-center">
+         <div className={`text-4xl font-mono font-bold ${color}`}>
             {value}
          </div>
-         <div className="text-[10px] text-gray-500">{unit}</div>
+         <div className="text-xs text-gray-500 mt-1">{unit}</div>
       </div>
     </div>
   );
@@ -272,8 +272,8 @@ const DashboardPage = () => {
                   <div className="text-xs font-mono text-gray-500">OPEN-METEO HISTORICAL</div>
               </div>
               
-              {/* FIX: Strict Container Dimensions + Conditional Render */}
-              <div style={{ width: '100%', height: 300 }}>
+              {/* FIX: Strict Container Dimensions + min-w-0 for Recharts */}
+              <div className="w-full h-[300px] min-w-0 relative">
                  {hourly.length > 0 ? (
                    <ResponsiveContainer width="100%" height="100%">
                       <AreaChart data={hourly}>
@@ -342,7 +342,8 @@ const DashboardPage = () => {
                <Beaker className="text-eko-emerald" /> 
                Full Spectrum Chemistry
             </h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {/* CHANGED: grid-cols-2 md:grid-cols-4 lg:grid-cols-6 -> lg:grid-cols-3 for much bigger tiles */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                {chemicals.map((chem, i) => (
                   <ChemicalCard 
                     key={i} 
