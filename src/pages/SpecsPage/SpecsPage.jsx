@@ -10,20 +10,23 @@ import {
 // Animated Gradient Text Component
 const AnimatedGradientText = ({ children, className = "" }) => (
   <span className={`relative inline-block ${className}`}>
-    <span className="absolute inset-0 bg-gradient-to-r from-eko-emerald via-cyan-400 to-blue-500 bg-clip-text text-transparent animate-gradient bg-[length:200%_auto]">
-      {children}
-    </span>
-    <span className="relative bg-gradient-to-r from-eko-emerald via-cyan-400 to-blue-500 bg-clip-text text-transparent">
+    <span className="bg-gradient-to-r from-eko-emerald via-cyan-400 to-blue-500 bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient">
       {children}
     </span>
   </span>
 );
 
-// Live Data Counter with Animation
+// Live Data Counter with Animation (only animates once on mount)
 const LiveCounter = ({ target, suffix = "", prefix = "", duration = 2000 }) => {
   const [count, setCount] = useState(0);
+  const [hasAnimated, setHasAnimated] = useState(false);
 
   useEffect(() => {
+    if (hasAnimated) {
+      setCount(target);
+      return;
+    }
+
     let startTime;
     let animationFrame;
 
@@ -35,12 +38,21 @@ const LiveCounter = ({ target, suffix = "", prefix = "", duration = 2000 }) => {
 
       if (progress < 1) {
         animationFrame = requestAnimationFrame(animate);
+      } else {
+        setHasAnimated(true);
       }
     };
 
     animationFrame = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(animationFrame);
-  }, [target, duration]);
+  }, []);
+
+  // Update count smoothly when target changes after initial animation
+  useEffect(() => {
+    if (hasAnimated) {
+      setCount(target);
+    }
+  }, [target, hasAnimated]);
 
   return (
     <span className="font-mono font-bold">
@@ -51,15 +63,6 @@ const LiveCounter = ({ target, suffix = "", prefix = "", duration = 2000 }) => {
 
 // Live Metric Card
 const LiveMetricCard = ({ icon: Icon, label, value, trend, delay }) => {
-  const [isLive, setIsLive] = useState(true);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setIsLive(prev => !prev);
-    }, 2000);
-    return () => clearInterval(interval);
-  }, []);
-
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.9 }}
@@ -70,7 +73,7 @@ const LiveMetricCard = ({ icon: Icon, label, value, trend, delay }) => {
     >
       {/* Live Indicator */}
       <div className="absolute top-3 right-3 flex items-center gap-1.5">
-        <div className={`w-1.5 h-1.5 rounded-full ${isLive ? 'bg-eko-emerald' : 'bg-cyan-400'} animate-pulse`} />
+        <div className="w-1.5 h-1.5 rounded-full bg-eko-emerald animate-pulse" />
         <span className="text-[8px] font-mono text-white/40 uppercase">LIVE</span>
       </div>
 
@@ -94,16 +97,11 @@ const LiveMetricCard = ({ icon: Icon, label, value, trend, delay }) => {
           <span>{trend}</span>
         </div>
       )}
-
-      {/* Animated Border */}
-      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-        <div className="absolute inset-0 bg-gradient-to-r from-eko-emerald/20 via-cyan-400/20 to-blue-500/20 animate-gradient bg-[length:200%_auto]" />
-      </div>
     </motion.div>
   );
 };
 
-// Spec Card Component with Enhanced Animations
+// Spec Card Component
 const SpecCard = ({ icon: Icon, value, label, description, delay, variant = 'emerald' }) => {
   const colors = {
     emerald: {
@@ -159,13 +157,46 @@ const SpecCard = ({ icon: Icon, value, label, description, delay, variant = 'eme
   );
 };
 
+// Performance Card Component
+const PerformanceCard = ({ icon: Icon, value, unit, label, description, delay, variant = 'emerald' }) => {
+  const colors = {
+    emerald: {
+      icon: 'text-eko-emerald/50 group-hover:text-eko-emerald',
+      value: 'text-white',
+      border: 'hover:border-eko-emerald/30'
+    },
+    blue: {
+      icon: 'text-cyan-400/50 group-hover:text-cyan-400',
+      value: 'text-white',
+      border: 'hover:border-cyan-400/30'
+    }
+  };
+
+  const theme = colors[variant];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ delay, duration: 0.5 }}
+      viewport={{ once: true }}
+      className={`bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-4 ${theme.border} transition-all group`}
+    >
+      <div className="mb-3">
+        <Icon className={`${theme.icon} transition-colors`} size={20} />
+      </div>
+      <div className="flex items-baseline gap-1 mb-1">
+        <span className={`text-2xl font-bold ${theme.value}`}>{value}</span>
+        {unit && <span className="text-xs text-white/40 font-mono">{unit}</span>}
+      </div>
+      <p className="text-white/60 text-xs font-medium mb-1">{label}</p>
+      <p className="text-white/30 text-[10px] font-mono leading-relaxed">{description}</p>
+    </motion.div>
+  );
+};
+
 // Apple-Style 3D Product Showcase
 const ProductShowcase = () => {
-  const { scrollYProgress } = useScroll();
-  const scale = useTransform(scrollYProgress, [0.7, 1], [0.8, 1]);
-  const opacity = useTransform(scrollYProgress, [0.7, 0.9], [0, 1]);
-  const rotateY = useTransform(scrollYProgress, [0.7, 1], [-15, 0]);
-
   return (
     <div className="relative py-32 overflow-hidden">
       {/* Background Grid */}
@@ -176,6 +207,7 @@ const ProductShowcase = () => {
           initial={{ opacity: 0, y: 50 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
           className="text-center mb-16"
         >
           <h2 className="text-5xl md:text-7xl font-bold mb-6">
@@ -189,62 +221,62 @@ const ProductShowcase = () => {
 
         {/* Main Product Display */}
         <motion.div
-          style={{ scale, opacity }}
+          initial={{ opacity: 0, scale: 0.9 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 1 }}
           className="relative mb-20"
         >
           <div className="relative aspect-[16/9] rounded-3xl overflow-hidden bg-gradient-to-br from-[#0a0a0a] to-[#1a1a1a] border border-white/10">
-            {/* Placeholder for 3D Model - Replace with actual image/model */}
             <div className="absolute inset-0 flex items-center justify-center">
               <motion.div
                 animate={{ 
-                  rotateY: [0, 10, -10, 0],
-                  scale: [1, 1.05, 1]
+                  rotateY: [0, 5, -5, 0],
                 }}
                 transition={{ 
                   duration: 8, 
                   repeat: Infinity,
                   ease: "easeInOut"
                 }}
-                className="relative w-full h-full flex items-center justify-center"
+                className="relative w-full h-full flex items-center justify-center perspective-1000"
               >
-                {/* Central Column Representation */}
+                {/* Central Column */}
                 <div className="relative w-32 h-96 bg-gradient-to-b from-eko-emerald/20 via-cyan-500/20 to-blue-500/20 rounded-3xl border border-white/20 backdrop-blur-xl shadow-[0_0_80px_rgba(16,185,129,0.3)]">
-                  {/* Bubbles Animation */}
+                  {/* Continuous Bubbles */}
                   {[...Array(8)].map((_, i) => (
                     <motion.div
                       key={i}
                       className="absolute w-2 h-2 bg-eko-emerald/60 rounded-full"
                       style={{
                         left: `${20 + Math.random() * 60}%`,
-                        bottom: 0
                       }}
                       animate={{
-                        y: [-400, 0],
-                        opacity: [0, 1, 0],
-                        scale: [0.5, 1, 0.5]
+                        y: [400, -20],
+                        opacity: [0, 1, 1, 0],
+                        scale: [0.5, 1, 0.8]
                       }}
                       transition={{
-                        duration: 4 + Math.random() * 2,
+                        duration: 5 + i * 0.3,
                         repeat: Infinity,
-                        delay: i * 0.5,
+                        delay: i * 0.7,
                         ease: "linear"
                       }}
                     />
                   ))}
 
-                  {/* LED Strip Effect */}
+                  {/* LED Strip */}
                   <div className="absolute inset-x-4 top-4 h-1 bg-gradient-to-r from-transparent via-eko-emerald to-transparent animate-pulse" />
                   
-                  {/* Glass Texture Lines */}
+                  {/* Glass Lines */}
                   <div className="absolute inset-0 bg-[linear-gradient(transparent_95%,rgba(255,255,255,0.1)_95%)] bg-[length:100%_20px]" />
                 </div>
 
-                {/* Glow Effect */}
-                <div className="absolute inset-0 bg-gradient-to-t from-eko-emerald/20 via-transparent to-cyan-500/20 animate-pulse" />
+                {/* Ambient Glow */}
+                <div className="absolute inset-0 bg-gradient-to-t from-eko-emerald/20 via-transparent to-cyan-500/20 animate-pulse" style={{ animationDuration: '3s' }} />
               </motion.div>
             </div>
 
-            {/* Floating Specs */}
+            {/* Floating Spec Callouts */}
             <motion.div
               initial={{ opacity: 0, x: -50 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -280,7 +312,7 @@ const ProductShowcase = () => {
           </div>
         </motion.div>
 
-        {/* Feature Highlights Grid */}
+        {/* Feature Highlights */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-20">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -325,7 +357,7 @@ const ProductShowcase = () => {
           </motion.div>
         </div>
 
-        {/* Exploded View Section */}
+        {/* Exploded Layer View */}
         <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
@@ -335,7 +367,7 @@ const ProductShowcase = () => {
           <h3 className="text-3xl font-bold text-white mb-4">Precision Engineering</h3>
           <p className="text-white/40 text-sm font-mono mb-8">Every layer serves a purpose</p>
           
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             {[
               { label: "Pre-Filter", color: "eko-emerald" },
               { label: "HEPA Layer", color: "cyan-400" },
@@ -351,7 +383,7 @@ const ProductShowcase = () => {
                 viewport={{ once: true }}
                 className="bg-white/5 border border-white/10 rounded-xl p-4 hover:border-white/30 transition-all"
               >
-                <div className={`w-full h-24 bg-gradient-to-b from-${layer.color}/20 to-transparent rounded-lg mb-3`} />
+                <div className={`w-full h-24 bg-gradient-to-b from-${layer.color}/20 to-transparent rounded-lg mb-3 border border-white/10`} />
                 <div className="text-white/80 text-sm font-medium">{layer.label}</div>
               </motion.div>
             ))}
@@ -366,19 +398,19 @@ const ProductShowcase = () => {
 const SpecsPage = () => {
   const [liveData, setLiveData] = useState({
     devices: 1247,
-    airCleaned: 3.2,
+    airCleaned: 32,
     co2Reduced: 890
   });
 
-  // Simulate live data updates
+  // Smooth live data updates (only values change, no re-animation)
   useEffect(() => {
     const interval = setInterval(() => {
       setLiveData(prev => ({
-        devices: prev.devices + Math.floor(Math.random() * 3),
-        airCleaned: parseFloat((prev.airCleaned + Math.random() * 0.1).toFixed(1)),
-        co2Reduced: prev.co2Reduced + Math.floor(Math.random() * 5)
+        devices: prev.devices + Math.floor(Math.random() * 2),
+        airCleaned: prev.airCleaned + Math.floor(Math.random() * 2),
+        co2Reduced: prev.co2Reduced + Math.floor(Math.random() * 3)
       }));
-    }, 3000);
+    }, 5000);
 
     return () => clearInterval(interval);
   }, []);
@@ -434,21 +466,81 @@ const SpecsPage = () => {
     }
   ];
 
+  const detailedSpecs = [
+    {
+      icon: Droplets,
+      value: "0.7",
+      unit: "g/L/day",
+      label: "CO₂ Fixation",
+      description: "Biological carbon capture",
+      delay: 0.4,
+      variant: 'emerald'
+    },
+    {
+      icon: Wind,
+      value: "500",
+      unit: "m³/h",
+      label: "Airflow Rate",
+      description: "Continuous circulation",
+      delay: 0.45,
+      variant: 'blue'
+    },
+    {
+      icon: Activity,
+      value: "85%",
+      unit: "",
+      label: "PM2.5 Removal",
+      description: "Particulate filtration",
+      delay: 0.5,
+      variant: 'emerald'
+    },
+    {
+      icon: Database,
+      value: "30s",
+      unit: "",
+      label: "Sensor Polling",
+      description: "Real-time interval",
+      delay: 0.55,
+      variant: 'blue'
+    },
+    {
+      icon: Thermometer,
+      value: "20-28°C",
+      unit: "",
+      label: "Operating Range",
+      description: "Optimal temperature",
+      delay: 0.6,
+      variant: 'emerald'
+    },
+    {
+      icon: Cpu,
+      value: "ESP32",
+      unit: "",
+      label: "Microcontroller",
+      description: "Dual-core WiFi",
+      delay: 0.65,
+      variant: 'blue'
+    }
+  ];
+
   return (
     <div className="min-h-screen bg-black relative overflow-hidden">
       {/* Animated Background Gradients */}
-      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-eko-emerald/5 rounded-full blur-[150px] animate-pulse pointer-events-none" />
-      <div className="absolute top-1/3 right-1/4 w-[600px] h-[600px] bg-cyan-500/5 rounded-full blur-[180px] animate-pulse pointer-events-none" style={{ animationDelay: '1s' }} />
-      <div className="absolute bottom-0 left-1/3 w-[550px] h-[550px] bg-blue-500/5 rounded-full blur-[160px] animate-pulse pointer-events-none" style={{ animationDelay: '2s' }} />
+      <div className="fixed top-0 left-1/4 w-[500px] h-[500px] bg-eko-emerald/5 rounded-full blur-[150px] animate-pulse pointer-events-none" />
+      <div className="fixed top-1/3 right-1/4 w-[600px] h-[600px] bg-cyan-500/5 rounded-full blur-[180px] animate-pulse pointer-events-none" style={{ animationDelay: '1s', animationDuration: '4s' }} />
+      <div className="fixed bottom-0 left-1/3 w-[550px] h-[550px] bg-blue-500/5 rounded-full blur-[160px] animate-pulse pointer-events-none" style={{ animationDelay: '2s', animationDuration: '5s' }} />
 
-      {/* Add CSS for gradient animation */}
+      {/* CSS Animations */}
       <style>{`
         @keyframes gradient {
           0%, 100% { background-position: 0% 50%; }
           50% { background-position: 100% 50%; }
         }
         .animate-gradient {
-          animation: gradient 3s ease infinite;
+          animation: gradient 4s ease infinite;
+        }
+        .perspective-1000 {
+          perspective: 1000px;
         }
       `}</style>
 
@@ -509,7 +601,8 @@ const SpecsPage = () => {
           <div className="max-w-7xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
               className="mb-8"
             >
               <h2 className="text-2xl font-bold text-white mb-2">
@@ -522,15 +615,15 @@ const SpecsPage = () => {
               <LiveMetricCard
                 icon={Radio}
                 label="Active Devices"
-                value={<LiveCounter target={liveData.devices} suffix="+" />}
+                value={<LiveCounter target={liveData.devices} />}
                 trend="+12 today"
                 delay={0.1}
               />
               <LiveMetricCard
                 icon={Wind}
-                label="Air Cleaned (M m³)"
-                value={<LiveCounter target={liveData.airCleaned} suffix=" M" />}
-                trend="+0.2M this week"
+                label="Air Cleaned (m³)"
+                value={<LiveCounter target={liveData.airCleaned} suffix="M" />}
+                trend="+2M this week"
                 delay={0.2}
               />
               <LiveMetricCard
@@ -552,6 +645,67 @@ const SpecsPage = () => {
                 <SpecCard key={idx} {...spec} />
               ))}
             </div>
+          </div>
+        </div>
+
+        {/* Performance Metrics Section */}
+        <div className="px-6 mb-20">
+          <div className="max-w-7xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="mb-8"
+            >
+              <h2 className="text-3xl font-bold mb-2">
+                <span className="text-white">Performance </span>
+                <span className="text-white/40">Metrics</span>
+              </h2>
+              <p className="text-white/40 text-sm">Laboratory-verified efficiency data</p>
+            </motion.div>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              {detailedSpecs.map((spec, idx) => (
+                <PerformanceCard key={idx} {...spec} />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* System Architecture */}
+        <div className="px-6 mb-20">
+          <div className="max-w-7xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="bg-gradient-to-br from-eko-emerald/5 via-transparent to-cyan-500/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 md:p-12 relative overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-eko-emerald via-cyan-400 to-blue-500" />
+              
+              <div className="flex flex-col md:flex-row gap-8">
+                <div className="flex-shrink-0">
+                  <div className="p-4 rounded-xl bg-gradient-to-br from-eko-emerald/10 to-cyan-500/10 text-eko-emerald w-fit">
+                    <Gauge size={32} />
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold text-white mb-4">
+                    Intelligent <span className="text-transparent bg-clip-text bg-gradient-to-r from-eko-emerald to-cyan-400">Operation</span>
+                  </h3>
+                  <p className="text-white/60 leading-relaxed mb-4">
+                    The ekospaxes hybrid purifier employs <span className="text-eko-emerald font-mono">smart sleep/wake cycles</span> based 
+                    on real-time pollution monitoring. When air quality is within safe limits, the system enters 
+                    low-power standby mode consuming less than 2W.
+                  </p>
+                  <p className="text-white/40 leading-relaxed text-sm">
+                    Upon detecting elevated PM2.5, VOC levels, or CO₂ concentration, it automatically activates 
+                    biological filtration, increases airflow, and adjusts LED intensity to optimize photosynthetic 
+                    efficiency — restoring healthy indoor conditions within minutes.
+                  </p>
+                </div>
+              </div>
+            </motion.div>
           </div>
         </div>
 
