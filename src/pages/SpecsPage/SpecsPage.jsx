@@ -7,37 +7,31 @@ import {
 import { 
   ArrowLeft, Ruler, Zap, Container, Wifi, Layers, Clock,
   Droplets, Wind, Activity, Cpu, Database, Thermometer,
-  Shield, Gauge, Globe, ChevronRight, MoveRight
+  Shield, Gauge, Globe, ChevronRight, MoveRight, Beaker
 } from 'lucide-react';
 
-// --- UTILS ---
+// --- UTILS & HOOKS ---
 const ROTATION_RANGE = 32.5;
 const HALF_ROTATION_RANGE = 32.5 / 2;
 
 // --- ANIMATED COMPONENTS ---
 
-// 1. Magnetic Button for Modern Feel
+// 1. Magnetic Button (Vibrant Version)
 const MagneticButton = ({ children, className = "", onClick }) => {
   const ref = useRef(null);
   const x = useMotionValue(0);
   const y = useMotionValue(0);
-
-  const xSpring = useSpring(x, { stiffness: 150, damping: 15, mass: 0.1 });
-  const ySpring = useSpring(y, { stiffness: 150, damping: 15, mass: 0.1 });
+  const xSpring = useSpring(x, { stiffness: 150, damping: 15 });
+  const ySpring = useSpring(y, { stiffness: 150, damping: 15 });
 
   const handleMouseMove = (e) => {
     const { clientX, clientY } = e;
     const { height, width, left, top } = ref.current.getBoundingClientRect();
-    const middleX = clientX - (left + width / 2);
-    const middleY = clientY - (top + height / 2);
-    x.set(middleX * 0.1); // Strength
-    y.set(middleY * 0.1);
+    x.set((clientX - (left + width / 2)) * 0.1);
+    y.set((clientY - (top + height / 2)) * 0.1);
   };
 
-  const handleMouseLeave = () => {
-    x.set(0);
-    y.set(0);
-  };
+  const handleMouseLeave = () => { x.set(0); y.set(0); };
 
   return (
     <motion.button
@@ -54,31 +48,27 @@ const MagneticButton = ({ children, className = "", onClick }) => {
 };
 
 // 2. Kinetic Text Reveal
-const RevealText = ({ text, className = "", delay = 0 }) => {
-  return (
-    <span className={`inline-block overflow-hidden ${className}`}>
-      <motion.span
-        initial={{ y: "100%" }}
-        whileInView={{ y: 0 }}
-        transition={{ duration: 0.5, delay, ease: [0.33, 1, 0.68, 1] }}
-        viewport={{ once: true }}
-        className="inline-block"
-      >
-        {text}
-      </motion.span>
-    </span>
-  );
-};
+const RevealText = ({ text, className = "", delay = 0 }) => (
+  <span className={`inline-block overflow-hidden ${className}`}>
+    <motion.span
+      initial={{ y: "100%" }}
+      whileInView={{ y: 0 }}
+      transition={{ duration: 0.5, delay, ease: [0.33, 1, 0.68, 1] }}
+      viewport={{ once: true }}
+      className="inline-block"
+    >
+      {text}
+    </motion.span>
+  </span>
+);
 
 // 3. 3D Tilt Card
 const TiltCard = ({ children, className = "" }) => {
   const ref = useRef(null);
   const x = useMotionValue(0);
   const y = useMotionValue(0);
-
   const xSpring = useSpring(x);
   const ySpring = useSpring(y);
-
   const transform = useMotionTemplate`rotateX(${xSpring}deg) rotateY(${ySpring}deg)`;
 
   const handleMouseMove = (e) => {
@@ -88,16 +78,11 @@ const TiltCard = ({ children, className = "" }) => {
     const height = rect.height;
     const mouseX = (e.clientX - rect.left) * ROTATION_RANGE;
     const mouseY = (e.clientY - rect.top) * ROTATION_RANGE;
-    const rX = (mouseY / height - HALF_ROTATION_RANGE) * -1;
-    const rY = mouseX / width - HALF_ROTATION_RANGE;
-    x.set(rX);
-    y.set(rY);
+    x.set(((mouseY / height) - HALF_ROTATION_RANGE) * -1);
+    y.set((mouseX / width) - HALF_ROTATION_RANGE);
   };
 
-  const handleMouseLeave = () => {
-    x.set(0);
-    y.set(0);
-  };
+  const handleMouseLeave = () => { x.set(0); y.set(0); };
 
   return (
     <motion.div
@@ -114,69 +99,67 @@ const TiltCard = ({ children, className = "" }) => {
 
 // --- SECTION COMPONENTS ---
 
-// FIX: Defined GlobalStatCard
-const GlobalStatCard = ({ icon: Icon, label, value, subtext, delay, isLive = false }) => {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.5 }}
-      viewport={{ once: true }}
-      className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 relative overflow-hidden group hover:bg-white/10 transition-colors"
-    >
-      {isLive && (
-        <div className="absolute top-4 right-4 flex items-center gap-1.5">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-eko-emerald opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-eko-emerald"></span>
-          </span>
-          <span className="text-[10px] font-mono text-eko-emerald tracking-widest uppercase">LIVE</span>
-        </div>
-      )}
-      
-      <div className="mb-4 p-3 bg-white/5 w-fit rounded-xl group-hover:scale-110 transition-transform duration-300">
-        <Icon className="text-eko-emerald" size={24} />
+const GlobalStatCard = ({ icon: Icon, label, value, subtext, delay, isLive = false }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    transition={{ delay, duration: 0.5 }}
+    viewport={{ once: true }}
+    className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 relative overflow-hidden group hover:bg-white/10 transition-colors"
+  >
+    {isLive && (
+      <div className="absolute top-4 right-4 flex items-center gap-1.5">
+        <span className="relative flex h-2 w-2">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-eko-emerald opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-eko-emerald"></span>
+        </span>
+        <span className="text-[10px] font-mono text-eko-emerald tracking-widest uppercase">LIVE</span>
       </div>
-      
-      <div className="space-y-1">
-        <div className="text-4xl font-bold text-white tracking-tight font-display">{value}</div>
-        <div className="text-sm font-medium text-white/60">{label}</div>
-        {subtext && <div className="text-xs text-white/30 font-mono pt-1">{subtext}</div>}
-      </div>
+    )}
+    
+    <div className="mb-4 p-3 bg-white/5 w-fit rounded-xl group-hover:scale-110 transition-transform duration-300">
+      <Icon className="text-eko-emerald" size={24} />
+    </div>
+    
+    <div className="space-y-1">
+      <div className="text-4xl font-bold text-white tracking-tight font-display">{value}</div>
+      <div className="text-sm font-medium text-white/60">{label}</div>
+      {subtext && <div className="text-xs text-white/30 font-mono pt-1">{subtext}</div>}
+    </div>
+    {/* Gradient Blob */}
+    <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-eko-emerald/20 rounded-full blur-2xl group-hover:bg-eko-emerald/30 transition-all duration-500" />
+  </motion.div>
+);
 
-      {/* Decorative Gradient Blob */}
-      <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-eko-emerald/20 rounded-full blur-2xl group-hover:bg-eko-emerald/30 transition-all duration-500" />
-    </motion.div>
-  );
-};
-
+// Re-injecting the Vibrant Colors into Product Showcase
 const ProductShowcase = () => {
   const [activeLayer, setActiveLayer] = useState(0);
+  
   const layers = [
     {
       id: 0, title: "Aerospace Chassis", subtitle: "Unibody Aluminum",
       desc: "Precision-milled uni-body chassis with noise-dampening acoustic foam lining.",
-      icon: Shield, color: "text-gray-300", gradient: "from-gray-800 to-black"
+      icon: Shield, color: "text-white", gradient: "from-gray-800 to-black", border: "border-gray-600"
     },
     {
       id: 1, title: "Bio-Reactor Core", subtitle: "120L Living Culture",
       desc: "High-density microalgae cultures absorb CO₂ and release oxygen.",
-      icon: Droplets, color: "text-eko-emerald", gradient: "from-eko-emerald/20 to-transparent"
+      icon: Droplets, color: "text-eko-emerald", gradient: "from-eko-emerald/40 to-transparent", border: "border-eko-emerald"
     },
     {
       id: 2, title: "Sensor Array", subtitle: "Real-time Telemetry",
       desc: "Laser particle counters, electrochemical gas sensors, and turbidity meters.",
-      icon: Cpu, color: "text-cyan-400", gradient: "from-cyan-500/20 to-transparent"
+      icon: Cpu, color: "text-cyan-400", gradient: "from-cyan-500/40 to-transparent", border: "border-cyan-400"
     },
     {
       id: 3, title: "HEPA H13", subtitle: "Medical Grade",
       desc: "Captures 99.97% of particulate matter down to 0.3 microns.",
-      icon: Wind, color: "text-blue-400", gradient: "from-blue-500/20 to-transparent"
+      icon: Wind, color: "text-blue-400", gradient: "from-blue-500/40 to-transparent", border: "border-blue-400"
     },
     {
       id: 4, title: "UV-C Chamber", subtitle: "Sterilization",
       desc: "Neutralizes airborne pathogens ensuring sterile output.",
-      icon: Zap, color: "text-purple-400", gradient: "from-purple-500/20 to-transparent"
+      icon: Zap, color: "text-purple-400", gradient: "from-purple-500/40 to-transparent", border: "border-purple-400"
     }
   ];
 
@@ -212,21 +195,23 @@ const ProductShowcase = () => {
                       y: isActive ? -20 : index * 15,
                       z: isActive ? 100 : zOffset,
                       scale: isActive ? 1.1 : 1,
-                      opacity: isActive ? 1 : 0.4
+                      opacity: isActive ? 1 : 0.6
                     }}
                     onClick={() => setActiveLayer(index)}
                     className={`
                       absolute inset-0 rounded-2xl border backdrop-blur-xl cursor-pointer transition-all duration-500
-                      ${isActive ? 'border-white/40 bg-white/10 shadow-[0_0_50px_rgba(16,185,129,0.2)]' : 'border-white/10 bg-black/40 hover:border-white/30'}
+                      ${isActive 
+                        ? `bg-black/60 ${layer.border} shadow-[0_0_60px_rgba(16,185,129,0.15)]` 
+                        : 'border-white/10 bg-black/40 hover:border-white/30'}
                     `}
                     style={{ transformStyle: "preserve-3d" }}
                   >
-                    <div className={`absolute inset-0 bg-gradient-to-br ${layer.gradient} opacity-30 rounded-2xl`} />
+                    {/* Vibrant Gradient Background for Each Layer */}
+                    <div className={`absolute inset-0 bg-gradient-to-br ${layer.gradient} opacity-40 rounded-2xl`} />
+                    
                     <div className="absolute inset-0 flex items-center justify-center">
                       <layer.icon size={40} className={layer.color} />
                     </div>
-                    {/* Depth Edge */}
-                    <div className="absolute inset-x-0 -bottom-2 h-2 bg-white/5 transform rotate-x-90 origin-top rounded-b-sm" />
                   </motion.div>
                 );
               })}
@@ -287,37 +272,56 @@ const ProductShowcase = () => {
   );
 };
 
-const SpecCard = ({ icon: Icon, value, label, description, delay, variant = 'emerald' }) => (
-  <TiltCard className="h-full">
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.5 }}
-      className="h-full bg-[#080808] border border-white/10 rounded-3xl p-8 relative overflow-hidden group"
-    >
-      {/* Hover Glow */}
-      <div className="absolute inset-0 bg-gradient-to-br from-eko-emerald/0 to-eko-emerald/0 group-hover:from-eko-emerald/10 group-hover:to-transparent transition-all duration-500" />
-      
-      <div className="relative z-10 flex flex-col h-full">
-        <div className="mb-auto">
-          <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 border border-white/5 group-hover:border-eko-emerald/30">
-            <Icon className="text-white/40 group-hover:text-eko-emerald transition-colors" size={24} />
+// Restoring the Vibrant Spec Card with Gradient Variants
+const SpecCard = ({ icon: Icon, value, label, description, delay, variant = 'emerald' }) => {
+  const variants = {
+    emerald: {
+      border: 'group-hover:border-eko-emerald/50',
+      glow: 'group-hover:from-eko-emerald/20 group-hover:to-transparent',
+      icon: 'group-hover:text-eko-emerald',
+      text: 'text-eko-emerald'
+    },
+    blue: {
+      border: 'group-hover:border-cyan-400/50',
+      glow: 'group-hover:from-cyan-400/20 group-hover:to-transparent',
+      icon: 'group-hover:text-cyan-400',
+      text: 'text-cyan-400'
+    }
+  };
+
+  const theme = variants[variant];
+
+  return (
+    <TiltCard className="h-full">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ delay, duration: 0.5 }}
+        className={`h-full bg-[#080808] border border-white/10 rounded-3xl p-8 relative overflow-hidden group transition-all duration-500 ${theme.border}`}
+      >
+        {/* Restored: Subtle Gradient Background */}
+        <div className={`absolute inset-0 bg-gradient-to-br from-white/0 to-white/0 ${theme.glow} transition-all duration-500 opacity-0 group-hover:opacity-100`} />
+        
+        <div className="relative z-10 flex flex-col h-full">
+          <div className="mb-auto">
+            <div className={`w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 border border-white/5 ${theme.border}`}>
+              <Icon className={`text-white/40 ${theme.icon} transition-colors`} size={24} />
+            </div>
+            <h3 className="text-4xl font-bold text-white mb-2 tracking-tight">{value}</h3>
+            <div className={`text-lg font-medium ${theme.text} mb-4`}>{label}</div>
           </div>
-          <h3 className="text-4xl font-bold text-white mb-2 tracking-tight">{value}</h3>
-          <div className="text-lg font-medium text-eko-emerald mb-4">{label}</div>
+          <p className="text-sm text-white/40 leading-relaxed font-mono pt-6 border-t border-white/5">
+            {description}
+          </p>
         </div>
-        <p className="text-sm text-white/40 leading-relaxed font-mono pt-6 border-t border-white/5">
-          {description}
-        </p>
-      </div>
-    </motion.div>
-  </TiltCard>
-);
+      </motion.div>
+    </TiltCard>
+  );
+};
 
 // --- MAIN PAGE ---
 const SpecsPage = () => {
   const { scrollYProgress } = useScroll();
-  const y = useTransform(scrollYProgress, [0, 1], [0, -100]);
   
   const [realTimeData, setRealTimeData] = useState({
     globalAQI: null, location: 'Syncing...', pm25: null
@@ -326,9 +330,7 @@ const SpecsPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Simulating API latency for effect
         await new Promise(r => setTimeout(r, 1500)); 
-        // Using Delhi coords
         const res = await fetch('https://air-quality-api.open-meteo.com/v1/air-quality?latitude=28.6139&longitude=77.2090&current=pm2_5,us_aqi');
         const data = await res.json();
         setRealTimeData({
@@ -344,21 +346,22 @@ const SpecsPage = () => {
   }, []);
 
   const specs = [
-    { icon: Ruler, value: "1m²", label: "Footprint", description: "Compact 1m x 1m x 1.8m vertical design optimized for urban spaces.", delay: 0.1 },
-    { icon: Zap, value: "500W", label: "Hybrid Power", description: "Intelligent switching between Solar DC and Mains AC.", delay: 0.2 },
-    { icon: Container, value: "120L", label: "Bio-Capacity", description: "High-density photobioreactor columns with food-grade acrylic.", delay: 0.3 },
-    { icon: Wifi, value: "IoT", label: "Connected", description: "Dual-core ESP32 with MQTT & WebSocket telemetry.", delay: 0.4 },
-    { icon: Layers, value: "5x", label: "Filtration", description: "Multi-stage: Physical, Electrostatic, Biological, Chemical, UV.", delay: 0.5 },
-    { icon: Clock, value: "5yr", label: "Lifespan", description: "Modular components designed for long-term serviceability.", delay: 0.6 }
+    { icon: Ruler, value: "1m²", label: "Footprint", description: "Compact 1m x 1m x 1.8m vertical design optimized for urban spaces.", delay: 0.1, variant: 'emerald' },
+    { icon: Zap, value: "500W", label: "Hybrid Power", description: "Intelligent switching between Solar DC and Mains AC.", delay: 0.2, variant: 'blue' },
+    { icon: Container, value: "120L", label: "Bio-Capacity", description: "High-density photobioreactor columns with food-grade acrylic.", delay: 0.3, variant: 'emerald' },
+    { icon: Wifi, value: "IoT", label: "Connected", description: "Dual-core ESP32 with MQTT & WebSocket telemetry.", delay: 0.4, variant: 'blue' },
+    { icon: Layers, value: "5x", label: "Filtration", description: "Multi-stage: Physical, Electrostatic, Biological, Chemical, UV.", delay: 0.5, variant: 'emerald' },
+    { icon: Clock, value: "5yr", label: "Lifespan", description: "Modular components designed for long-term serviceability.", delay: 0.6, variant: 'blue' }
   ];
 
   return (
     <div className="min-h-screen bg-black text-white selection:bg-eko-emerald/30 selection:text-eko-emerald overflow-x-hidden">
-      {/* Dynamic Background Mesh */}
+      {/* Restored: Dynamic Background Mesh (Vibrant) */}
       <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="absolute top-[-20%] left-[-10%] w-[800px] h-[800px] bg-eko-emerald/10 rounded-full blur-[120px] mix-blend-screen animate-pulse duration-[10s]" />
-        <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[120px] mix-blend-screen animate-pulse duration-[8s]" />
-        <div className="absolute top-[40%] left-[50%] w-[400px] h-[400px] bg-cyan-500/5 rounded-full blur-[100px] mix-blend-screen" />
+        <div className="absolute top-[-20%] left-[-10%] w-[800px] h-[800px] bg-eko-emerald/20 rounded-full blur-[120px] mix-blend-screen animate-pulse duration-[10s]" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-blue-600/20 rounded-full blur-[120px] mix-blend-screen animate-pulse duration-[8s]" />
+        <div className="absolute top-[40%] left-[50%] w-[400px] h-[400px] bg-cyan-500/10 rounded-full blur-[100px] mix-blend-screen" />
+        {/* Noise Texture */}
         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150 mix-blend-overlay" />
       </div>
 
@@ -369,7 +372,7 @@ const SpecsPage = () => {
             <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
             <span className="font-mono text-sm tracking-wider">BACK</span>
           </Link>
-          <div className="font-mono text-xs text-eko-emerald border border-eko-emerald/30 px-3 py-1 rounded-full bg-eko-emerald/5">
+          <div className="font-mono text-xs text-eko-emerald border border-eko-emerald/30 px-3 py-1 rounded-full bg-eko-emerald/5 shadow-[0_0_10px_rgba(16,185,129,0.2)]">
             CLASS X • SERIES 1
           </div>
         </nav>
@@ -393,7 +396,7 @@ const SpecsPage = () => {
               </p>
               
               <div className="flex gap-4">
-                <MagneticButton className="px-8 py-4 bg-white text-black rounded-full font-bold hover:bg-gray-200 flex items-center gap-2 group">
+                <MagneticButton className="px-8 py-4 bg-eko-emerald text-black rounded-full font-bold hover:bg-eko-emerald/90 shadow-[0_0_20px_rgba(16,185,129,0.3)] flex items-center gap-2 group transition-all">
                   Download Datasheet <MoveRight size={18} className="group-hover:translate-x-1 transition-transform" />
                 </MagneticButton>
               </div>
@@ -438,7 +441,7 @@ const SpecsPage = () => {
               <div className="flex flex-wrap justify-center gap-8 mb-12 opacity-50 grayscale hover:grayscale-0 transition-all duration-500">
                  {/* Mock Logos */}
                  {['ISO 9001', 'CE Certified', 'Energy Star', 'Made in India'].map((cert, i) => (
-                    <div key={i} className="border border-white/20 px-4 py-2 rounded-lg font-mono text-xs tracking-widest">
+                    <div key={i} className="border border-white/20 px-4 py-2 rounded-lg font-mono text-xs tracking-widest hover:border-eko-emerald/50 hover:text-eko-emerald transition-colors">
                        {cert}
                     </div>
                  ))}
