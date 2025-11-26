@@ -143,20 +143,83 @@ const AQIGauge = ({ value, max, label, subLabel, pmValue }) => {
   );
 };
 
-const ChemicalCard = ({ label, formula, value, unit, limit }) => {
-  const safeVal = Number(value);
-  const isSafe = !isNaN(safeVal) ? (safeVal < limit) : true;
-  const color = !isSafe ? 'text-red-500' : 'text-eko-emerald';
+$1
+
+// --- EXTRA: Animated Info Panel (AQI + Coordinates + Direction) ---
+const CountUp = ({end, duration=1000, format = (v)=>v}) => {
+  const [val, setVal] = useState(0);
+  useEffect(() => {
+    let start = null;
+    const from = Number(val);
+    const to = Number(end);
+    const diff = to - from;
+    const step = (timestamp) => {
+      if (!start) start = timestamp;
+      const progress = Math.min((timestamp - start) / duration, 1);
+      setVal((from + diff * progress).toFixed(1));
+      if (progress < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [end]);
+  return <span>{format(Number(val))}</span>;
+};
+
+const getBearing = (lat1, lon1, lat2, lon2) => {
+  const toRad = (d) => d * Math.PI / 180;
+  const toDeg = (r) => r * 180 / Math.PI;
+  const dLon = toRad(lon2 - lon1);
+  const y = Math.sin(dLon) * Math.cos(toRad(lat2));
+  const x = Math.cos(toRad(lat1)) * Math.sin(toRad(lat2)) - Math.sin(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.cos(dLon);
+  const brng = Math.atan2(y, x);
+  return (toDeg(brng) + 360) % 360;
+};
+
+const AnimatedInfoPanel = ({ coords, locationName, pm25, hourly }) => {
+  const [prevCoords, setPrevCoords] = useState(coords);
+  const [bearing, setBearing] = useState(0);
+  useEffect(() => { if (prevCoords && coords) { const b = getBearing(prevCoords.lat, prevCoords.lng, coords.lat, coords.lng); setBearing(b); setPrevCoords(coords); } }, [coords]);
+
+  const trend = (() => {
+    if (!hourly || hourly.length < 2) return 0;
+    const last = hourly[hourly.length-1].val;
+    const prev = hourly[hourly.length-2].val;
+    return Number((last - prev).toFixed(1));
+  })();
 
   return (
-    <div className="bg-[#111] border border-white/10 p-6 rounded-2xl flex justify-between items-center hover:bg-white/5 hover:border-eko-emerald/30 transition-all group h-full shadow-lg">
-      <div className="flex flex-col justify-center">
-        <div className="text-xs text-gray-400 font-mono mb-2 uppercase tracking-widest">{label}</div>
-        <div className="flex items-baseline gap-1"><span className="text-3xl font-bold text-white group-hover:text-eko-neon transition-colors">{formula}</span></div>
-      </div>
-      <div className="text-right flex flex-col justify-center">
-        <div className={`text-4xl font-mono font-bold ${color}`}>{isNaN(safeVal) ? '—' : safeVal.toFixed(1)}</div>
-        <div className="text-xs text-gray-500 mt-1">{unit}</div>
+    <div className="mx-auto max-w-4xl my-6">
+      <div className="relative rounded-2xl bg-gradient-to-r from-black/60 to-white/2 border border-white/6 p-6 flex items-center gap-6 shadow-lg">
+        <div className="flex-1">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-md border border-white/10 bg-black/50">
+              <div className="text-xs text-gray-400 font-mono">AQI (PM2.5)</div>
+              <div className="text-4xl font-bold text-eko-emerald"><CountUp end={pm25} duration={700} format={(v)=>Math.round(v)} /></div>
+              <div className="text-xs text-gray-400 mt-1">{getPollutionStatus(pm25).label} <span className="text-[10px] text-gray-500">• {Math.abs(trend) > 0 ? (trend > 0 ? '↑' : '↓') + Math.abs(trend) : '—'}</span></div>
+            </div>
+
+            <div className="flex-1">
+              <div className="text-xs text-gray-400 font-mono">Location</div>
+              <div className="text-lg font-bold text-white">{locationName}</div>
+              <div className="text-xs text-gray-400 mt-1">Lat: {coords.lat.toFixed(4)} • Lng: {coords.lng.toFixed(4)}</div>
+            </div>
+
+            <div className="w-36 text-center">
+              <div className="text-xs text-gray-400 font-mono">Direction</div>
+              <div className="mx-auto mt-2 w-20 h-20 rounded-full border border-white/10 flex items-center justify-center bg-black/40" style={{transform: 'translateZ(0)'}}>
+                <div style={{transform: `rotate(${bearing}deg)`}} className="transition-transform duration-700">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 2 L15 9 L12 7 L9 9 Z" />
+                    <line x1="12" y1="7" x2="12" y2="22" />
+                  </svg>
+                </div>
+              </div>
+              <div className="text-xs text-gray-400 mt-2">Bearing: {Math.round(bearing)}°</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="absolute right-4 top-4 text-xs text-gray-500 font-mono">Live • {new Date().toLocaleTimeString()}</div>
       </div>
     </div>
   );
@@ -479,7 +542,9 @@ const DashboardPage = () => {
             </div>
           </div>
 
-          <GlassCard className="p-6 min-w-0">
+          <AnimatedInfoPanel coords={coords} locationName={locationName} pm25={calcPM25} hourly={hourly} />
+
+$1
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-white font-bold flex items-center gap-2"><Activity size={18} className="text-eko-emerald" /> 24-Hour Pollution Trend (PM 2.5)</h3>
 
@@ -596,4 +661,3 @@ const DashboardPage = () => {
 };
 
 export default DashboardPage;
-
