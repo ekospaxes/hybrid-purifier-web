@@ -1,5 +1,4 @@
 import React from 'react';
-import Hero from './Hero/Hero';
 import Technology from './Technology/Technology';
 import Sensors from './Sensors/Sensors';
 import Impact from './Impact/Impact';
