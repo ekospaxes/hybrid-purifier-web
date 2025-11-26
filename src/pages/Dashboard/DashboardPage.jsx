@@ -8,8 +8,7 @@ import {
 import {
   Wind, MapPin, ShieldCheck, Search, AlertTriangle,
   Thermometer, RefreshCw, Crosshair, X, Beaker, Activity,
-  Heart, Eye, Sun, Download, Clock, Star, Settings, FileText, Copy, Trash,
-  CheckCircle, Loader2
+  Heart, Eye, Sun, Download, Clock, Star, Settings, FileText, Copy, Trash
 } from 'lucide-react';
 import Navbar from '../../layout/Navbar/Navbar';
 import GlassCard from '../../components/ui/GlassCard';
@@ -32,15 +31,18 @@ const downloadCSV = (filename, rows, delimiter = ',') => {
   const esc = (v) => {
     if (v === null || v === undefined) return '';
     const s = String(v);
-    if (s.includes('"') || s.includes('\n') || s.includes(delimiter)) {
+    if (s.includes('"') || s.includes('
+') || s.includes(delimiter)) {
       return `"${s.replace(/"/g, '""')}"`;
     }
     return s;
   };
   if (!rows || !rows.length) return;
   const header = Object.keys(rows[0]).join(delimiter);
-  const body = rows.map(r => Object.values(r).map(esc).join(delimiter)).join('\n');
-  const csv = header + '\n' + body;
+  const body = rows.map(r => Object.values(r).map(esc).join(delimiter)).join('
+');
+  const csv = header + '
+' + body;
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -171,6 +173,9 @@ const DashboardPage = () => {
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // tile fallback state
+  const [tileError, setTileError] = useState(false);
 
   // features state
   const [lastUpdated, setLastUpdated] = useState(null);
@@ -303,7 +308,12 @@ const DashboardPage = () => {
       const entry = { name: locationName, lat: coords.lat, lng: coords.lng, created: new Date().toISOString() };
       // prevent duplicates
       const exists = favorites.some(f => f.lat === entry.lat && f.lng === entry.lng);
-      if (exists) { setToasts({ show: true, message: 'Location already saved' }); setTimeout(() => setToasts({ show: false, message: '' }), 1800); return; }
+      if (exists) {
+        setToasts({ show: true, message: 'Location already saved' });
+        setTimeout(() => setToasts({ show: false, message: '' }), 1800);
+        setSavingFav(false); // ensure flag reset
+        return;
+      }
       const updated = [entry, ...favorites].slice(0, 8);
       setFavorites(updated);
       localStorage.setItem('favorites', JSON.stringify(updated));
@@ -377,6 +387,15 @@ const DashboardPage = () => {
 
   const triggerRefresh = () => fetchData(false);
 
+  // tile error handler to avoid 404 tile issues
+  const handleTileError = () => {
+    if (!tileError) {
+      setTileError(true);
+      setToasts({ show: true, message: 'Tile server failed — switching to fallback tiles' });
+      setTimeout(() => setToasts({ show: false, message: '' }), 2500);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-black pb-20 overflow-x-hidden">
       <Navbar />
@@ -399,9 +418,9 @@ const DashboardPage = () => {
           <div className="relative flex items-center bg-black/80 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl z-50 transition-all focus-within:border-eko-emerald/50">
             <Search className="absolute left-4 text-gray-400" size={20} />
             <input aria-label="Search city" type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search any city on Earth..." className="w-full bg-transparent border-none text-white px-12 py-4 focus:ring-0 focus:outline-none text-lg" />
-            {query && <button aria-label="clear search" onClick={() => setQuery('')} className="absolute right-14 text-gray-500 hover:text-white"><X size={18} /></button>}
+            {query && <button type="button" aria-label="clear search" onClick={() => setQuery('')} className="absolute right-14 text-gray-500 hover:text-white"><X size={18} /></button>}
             <div className="w-px h-8 bg-white/10 mx-2"></div>
-            <button aria-label="locate me" onClick={handleLocateMe} className="px-4 text-eko-emerald hover:text-eko-neon transition-colors" title="Locate Me"><Crosshair size={22} /></button>
+            <button type="button" aria-label="locate me" onClick={handleLocateMe} className="px-4 text-eko-emerald hover:text-eko-neon transition-colors" title="Locate Me"><Crosshair size={22} /></button>
           </div>
 
           <AnimatePresence>{showSuggestions && suggestions.length > 0 && (
@@ -423,7 +442,21 @@ const DashboardPage = () => {
         <div className="lg:col-span-8 space-y-6 min-w-0">
           <div className="h-[400px] rounded-3xl overflow-hidden border border-white/10 relative z-0 shadow-lg bg-[#111]">
             <MapContainer center={[coords.lat, coords.lng]} zoom={12} scrollWheelZoom={false} className="h-full w-full">
-              <TileLayer attribution='Tiles &copy; Esri' url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" />
+              {/* Primary tile layer (may 404) */}
+              {!tileError ? (
+                <TileLayer
+                  attribution='Tiles &copy; Esri'
+                  url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                  eventHandlers={{ tileerror: handleTileError }}
+                />
+              ) : (
+                // fallback to OpenStreetMap tiles if primary fails
+                <TileLayer
+                  attribution='&copy; OpenStreetMap contributors'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+              )}
+
               <CircleMarker center={[coords.lat, coords.lng]} radius={10} color="#10B981" fillColor="#10B981" fillOpacity={0.8}>
                 <Popup>{locationName}</Popup>
               </CircleMarker>
@@ -436,10 +469,10 @@ const DashboardPage = () => {
 
             {/* Right-side micro-controls */}
             <div className="absolute top-4 right-4 z-[400] flex gap-2">
-              <button title="Refresh" onClick={triggerRefresh} disabled={loading} className={`bg-black/70 hover:bg-white/5 border border-white/10 px-3 py-2 rounded text-xs flex items-center gap-2 ${loading ? 'opacity-60 cursor-wait' : ''}`}>
+              <button type="button" title="Refresh" onClick={triggerRefresh} disabled={loading} className={`bg-black/70 hover:bg-white/5 border border-white/10 px-3 py-2 rounded text-xs flex items-center gap-2 ${loading ? 'opacity-60 cursor-wait' : ''}`}>
                 {loading ? <Spinner size={14} /> : <RefreshCw size={14} />} <span>{loading ? 'Loading' : 'Refresh'}</span>
               </button>
-              <button title="Save favorite" onClick={saveFavorite} disabled={savingFav} className={`bg-black/70 hover:bg-white/5 border border-white/10 px-3 py-2 rounded text-xs flex items-center gap-2 ${savingFav ? 'opacity-60 cursor-wait' : ''}`}>
+              <button type="button" title="Save favorite" onClick={saveFavorite} disabled={savingFav} className={`bg-black/70 hover:bg-white/5 border border-white/10 px-3 py-2 rounded text-xs flex items-center gap-2 ${savingFav ? 'opacity-60 cursor-wait' : ''}`}>
                 {savingFav ? <Spinner size={14} /> : <Star size={14} />} <span>{savingFav ? 'Saving' : 'Save'}</span>
               </button>
               <div className="bg-black/70 border border-white/10 px-3 py-2 rounded text-xs flex items-center gap-2"><div className={`w-2 h-2 rounded-full ${status.label === 'HAZARDOUS' ? 'bg-rose-500' : 'bg-eko-emerald'}`} /><div className="text-xs text-gray-300">{status.label}</div></div>
@@ -451,8 +484,8 @@ const DashboardPage = () => {
               <h3 className="text-white font-bold flex items-center gap-2"><Activity size={18} className="text-eko-emerald" /> 24-Hour Pollution Trend (PM 2.5)</h3>
 
               <div className="flex items-center gap-2">
-                <button onClick={exportHourly} disabled={exporting || hourly.length === 0} className={`text-xs bg-black/70 hover:bg-white/5 border border-white/10 px-3 py-1 rounded flex items-center gap-2 ${exporting ? 'opacity-60 cursor-wait' : ''}`} title="Download hourly CSV">{exporting ? <Spinner size={14} /> : <Download size={14} />} CSV</button>
-                <button onClick={() => setShowRaw(s => !s)} className="text-xs bg-black/70 hover:bg-white/5 border border-white/10 px-3 py-1 rounded flex items-center gap-2" title="Toggle raw JSON"><FileText size={14} /> Raw</button>
+                <button type="button" onClick={exportHourly} disabled={exporting || hourly.length === 0} className={`text-xs bg-black/70 hover:bg-white/5 border border-white/10 px-3 py-1 rounded flex items-center gap-2 ${exporting ? 'opacity-60 cursor-wait' : ''}`} title="Download hourly CSV">{exporting ? <Spinner size={14} /> : <Download size={14} />} CSV</button>
+                <button type="button" onClick={() => setShowRaw(s => !s)} className="text-xs bg-black/70 hover:bg-white/5 border border-white/10 px-3 py-1 rounded flex items-center gap-2" title="Toggle raw JSON"><FileText size={14} /> Raw</button>
               </div>
             </div>
 
@@ -489,12 +522,12 @@ const DashboardPage = () => {
             <div className="mb-4">
               <div className="text-xs text-gray-400 font-mono uppercase tracking-widest mb-2">Controls</div>
               <div className="flex gap-2">
-                <button onClick={triggerRefresh} disabled={loading} className={`flex-1 px-3 py-2 text-sm bg-black/70 border border-white/10 rounded hover:bg-white/5 flex items-center gap-2 ${loading ? 'opacity-60 cursor-wait' : ''}`} title="Refresh now">{loading ? <Spinner size={16} /> : <RefreshCw />} <span>{loading ? 'Loading' : 'Refresh'}</span></button>
-                <button onClick={copyShareLink} disabled={copying} className={`px-3 py-2 text-sm bg-black/70 border border-white/10 rounded hover:bg-white/5 flex items-center gap-2 ${copying ? 'opacity-60 cursor-wait' : ''}`} title="Copy share link">{copying ? <Spinner size={16} /> : <Copy />} Share</button>
+                <button type="button" onClick={triggerRefresh} disabled={loading} className={`flex-1 px-3 py-2 text-sm bg-black/70 border border-white/10 rounded hover:bg-white/5 flex items-center gap-2 ${loading ? 'opacity-60 cursor-wait' : ''}`} title="Refresh now">{loading ? <Spinner size={16} /> : <RefreshCw />} <span>{loading ? 'Loading' : 'Refresh'}</span></button>
+                <button type="button" onClick={copyShareLink} disabled={copying} className={`px-3 py-2 text-sm bg-black/70 border border-white/10 rounded hover:bg-white/5 flex items-center gap-2 ${copying ? 'opacity-60 cursor-wait' : ''}`} title="Copy share link">{copying ? <Spinner size={16} /> : <Copy />} Share</button>
               </div>
               <div className="mt-3 flex gap-2 items-center">
-                <button onClick={exportChemicals} disabled={exporting} className={`flex-1 px-3 py-2 text-sm bg-black/70 border border-white/10 rounded hover:bg-white/5 flex items-center gap-2 ${exporting ? 'opacity-60 cursor-wait' : ''}`} title="Export chemicals CSV">{exporting ? <Spinner size={16} /> : <Download />} Export</button>
-                <button onClick={() => { setShowRaw(s => !s); }} className="px-3 py-2 text-sm bg-black/70 border border-white/10 rounded hover:bg-white/5 flex items-center gap-2" title="Toggle raw JSON"><FileText /> Debug</button>
+                <button type="button" onClick={exportChemicals} disabled={exporting} className={`flex-1 px-3 py-2 text-sm bg-black/70 border border-white/10 rounded hover:bg-white/5 flex items-center gap-2 ${exporting ? 'opacity-60 cursor-wait' : ''}`} title="Export chemicals CSV">{exporting ? <Spinner size={16} /> : <Download />} Export</button>
+                <button type="button" onClick={() => { setShowRaw(s => !s); }} className="px-3 py-2 text-sm bg-black/70 border border-white/10 rounded hover:bg-white/5 flex items-center gap-2" title="Toggle raw JSON"><FileText /> Debug</button>
               </div>
             </div>
 
@@ -527,8 +560,8 @@ const DashboardPage = () => {
                 <div key={i} className="flex items-center justify-between bg-white/3 border border-white/5 px-3 py-2 rounded">
                   <div className="text-sm"><div className="font-medium text-white">{f.name}</div><div className="text-xs text-gray-400">{formatISO(f.created)}</div></div>
                   <div className="flex items-center gap-2">
-                    <button onClick={() => { setCoords({ lat: f.lat, lng: f.lng }); setLocationName(f.name); }} className="px-2 py-1 text-xs bg-black/60 border border-white/10 rounded">Go</button>
-                    <button onClick={() => removeFavorite(i)} className="px-2 py-1 text-xs bg-black/60 border border-white/10 rounded text-red-400" title="Remove favorite"><Trash size={14} /></button>
+                    <button type="button" onClick={() => { setCoords({ lat: f.lat, lng: f.lng }); setLocationName(f.name); }} className="px-2 py-1 text-xs bg-black/60 border border-white/10 rounded">Go</button>
+                    <button type="button" onClick={() => removeFavorite(i)} className="px-2 py-1 text-xs bg-black/60 border border-white/10 rounded text-red-400" title="Remove favorite"><Trash size={14} /></button>
                   </div>
                 </div>
               ))}
@@ -543,9 +576,10 @@ const DashboardPage = () => {
 
               <div className="flex items-center justify-between"><div className="text-sm text-gray-300">Interval (s)</div><input type="number" min={10} value={refreshInterval} onChange={(e) => { const v = Number(e.target.value) || 10; setRefreshInterval(v); localStorage.setItem('refreshInterval', String(v)); }} className="w-20 bg-[#0b0b0b] border border-white/10 px-2 py-1 rounded text-sm text-white" /></div>
 
-              <div className="flex items-center justify-between"><div className="text-sm text-gray-300">CSV delimiter</div><select value={csvDelimiter} onChange={(e) => { setCsvDelimiter(e.target.value); localStorage.setItem('csvDelimiter', e.target.value); }} className="bg-[#0b0b0b] border border-white/10 px-2 py-1 rounded text-sm text-white"><option value=",">Comma (,)</option><option value=",">Semicolon (;)</option><option value="\t">Tab</option></select></div>
+              <div className="flex items-center justify-between"><div className="text-sm text-gray-300">CSV delimiter</div><select value={csvDelimiter} onChange={(e) => { setCsvDelimiter(e.target.value); localStorage.setItem('csvDelimiter', e.target.value); }} className="bg-[#0b0b0b] border border-white/10 px-2 py-1 rounded text-sm text-white"><option value=",">Comma (,)</option><option value=";">Semicolon (;)</option><option value="	">Tab</option></select></div>
 
-              <div className="flex items-center gap-2"><button onClick={clearStorage} disabled={clearing} className={`text-xs px-3 py-2 bg-black/70 border border-white/10 rounded ${clearing ? 'opacity-60 cursor-wait' : ''}`}>{clearing ? <Spinner size={14} /> : 'Clear storage'}</button><button onClick={() => { setShowRaw(true); setToasts({ show: true, message: 'Raw JSON opened' }); setTimeout(() => setToasts({ show: false, message: '' }), 1400); }} className="text-xs px-3 py-2 bg-black/70 border border-white/10 rounded">Open raw</button></div>
+              <div className="flex items-center gap-2"><button type="button" onClick={clearStorage} disabled={clearing} className={`text-xs px-3 py-2 bg-black/70 border border-white/10 rounded ${clearing ? 'opacity-60 cursor-wait' : ''}`}>
+                {clearing ? <Spinner size={14} /> : 'Clear storage'}</button><button type="button" onClick={() => { setShowRaw(true); setToasts({ show: true, message: 'Raw JSON opened' }); setTimeout(() => setToasts({ show: false, message: '' }), 1400); }} className="text-xs px-3 py-2 bg-black/70 border border-white/10 rounded">Open raw</button></div>
             </div>
           </GlassCard>
         </div>
@@ -553,9 +587,7 @@ const DashboardPage = () => {
         {/* BOTTOM: FULL SPECTRUM */}
         <div className="lg:col-span-12">
           <h3 className="text-white font-display text-2xl font-bold mb-6 flex items-center gap-3"><Beaker className="text-eko-emerald" /> Full Spectrum Chemistry<div className="ml-4 text-xs font-mono text-gray-400">Units: µg/m³</div></h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {chemicals.map((chem, i) => (<ChemicalCard key={i} label={chem.label} formula={chem.formula} value={chem.val} unit={chem.unit} limit={chem.limit} delay={i * 0.1} />))}
-          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">{chemicals.map((chem, i) => (<ChemicalCard key={i} label={chem.label} formula={chem.formula} value={chem.val} unit={chem.unit} limit={chem.limit} delay={i * 0.1} />))}</div>
         </div>
 
       </div>
@@ -564,3 +596,4 @@ const DashboardPage = () => {
 };
 
 export default DashboardPage;
+
