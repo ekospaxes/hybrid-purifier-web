@@ -1,9 +1,11 @@
-import React from 'react';
-import Technology from './Technology/Technology';
-import Sensors from './Sensors/Sensors';
-import Impact from './Impact/Impact';
-import Specs from './Specs/Specs';
-import EcosystemMap from '../../components/ui/EcosystemMap'; // <--- Import
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { 
+  ArrowLeft, Ruler, Zap, Container, Wifi, Layers, Clock,
+  Droplets, Wind, Activity, Cpu, Database, Thermometer,
+  Shield, Gauge, Radio, TrendingUp, Home, Building2, GraduationCap
+} from 'lucide-react';
 
 const Home = () => {
   return (
