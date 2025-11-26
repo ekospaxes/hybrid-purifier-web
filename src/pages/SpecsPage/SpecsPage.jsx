@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, useSpring, useTransform, useMotionValue } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
   ArrowLeft, Ruler, Zap, Container, Wifi, Layers, Clock,
   Droplets, Wind, Activity, Cpu, Database, Thermometer,
-  Shield, Gauge, Radio, TrendingUp
+  Shield, Gauge, Radio, TrendingUp, Home, Building2, GraduationCap
 } from 'lucide-react';
 
 // --- HELPER COMPONENTS ---
@@ -106,140 +106,82 @@ const PerformanceCard = ({ icon: Icon, value, unit, label, description, delay, v
   );
 };
 
-// --- 3D ARCHITECTURE COMPONENTS ---
+// --- NEW: DEPLOYMENT SCENARIOS SECTION ---
 
-// 1. The Steel Chassis (Frame)
-const Chassis = () => (
-  <div className="absolute inset-0 pointer-events-none" style={{ transformStyle: 'preserve-3d' }}>
-    {/* Vertical Pillars */}
-    <div className="absolute top-[-200px] left-[-10px] w-2 h-[600px] bg-white/10" style={{ transform: 'translateZ(-150px)' }} />
-    <div className="absolute top-[-200px] right-[-10px] w-2 h-[600px] bg-white/10" style={{ transform: 'translateZ(-150px)' }} />
-    <div className="absolute top-[-200px] left-[-10px] w-2 h-[600px] bg-white/10" style={{ transform: 'translateZ(150px)' }} />
-    <div className="absolute top-[-200px] right-[-10px] w-2 h-[600px] bg-white/10" style={{ transform: 'translateZ(150px)' }} />
-    
-    {/* Base Platform */}
-    <div className="absolute bottom-[-100px] left-[-20px] right-[-20px] h-4 bg-white/20 rounded-lg" style={{ transform: 'translateY(180px) rotateX(90deg)' }} />
-  </div>
+const DeploymentCard = ({ icon: Icon, title, subtitle, points, delay, color }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true }}
+    transition={{ delay, duration: 0.6 }}
+    className="flex-1 bg-[#0f0f0f] border border-white/5 rounded-2xl p-8 hover:border-white/10 transition-colors group"
+  >
+    <div className={`w-12 h-12 rounded-full bg-${color}-500/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
+      <Icon className={`text-${color}-400`} size={24} />
+    </div>
+    <h3 className="text-xl font-bold text-white mb-2">{title}</h3>
+    <p className="text-white/40 text-sm mb-6">{subtitle}</p>
+    <ul className="space-y-3">
+      {points.map((point, i) => (
+        <li key={i} className="flex items-center gap-3 text-sm text-gray-400">
+          <div className={`w-1.5 h-1.5 rounded-full bg-${color}-500/50`} />
+          {point}
+        </li>
+      ))}
+    </ul>
+  </motion.div>
 );
 
-// 2. Volumetric Slab (Thick Layer)
-const VolumetricSlab = ({ z, color, label, sub, delay, thickness = 20, isLiquid = false }) => {
+const DeploymentSection = () => {
   return (
-    <motion.div
-      style={{ transform: `translateZ(${z}px)` }}
-      initial={{ opacity: 0, scale: 0.8 }}
-      whileInView={{ opacity: 1, scale: 1 }}
-      transition={{ delay, duration: 0.8 }}
-      className="absolute w-64 h-64 md:w-80 md:h-80 group"
-    >
-      {/* MAIN PLATE */}
-      <div 
-        className="absolute inset-0 rounded-xl border backdrop-blur-md transition-all duration-300 group-hover:brightness-125"
-        style={{ 
-          backgroundColor: isLiquid ? `${color}10` : '#0a0a0a',
-          borderColor: `${color}40`,
-          boxShadow: `0 0 15px ${color}10, inset 0 0 30px ${color}05`
-        }}
-      >
-        {/* Tech Pattern inside */}
-        <div 
-          className="absolute inset-2 opacity-30" 
-          style={{ 
-            backgroundImage: isLiquid 
-              ? `radial-gradient(circle, ${color}40 2px, transparent 3px)` 
-              : `linear-gradient(${color}20 1px, transparent 1px), linear-gradient(90deg, ${color}20 1px, transparent 1px)`,
-            backgroundSize: isLiquid ? '15px 15px' : '30px 30px'
-          }} 
-        />
-        
-        {/* "Thickness" Sides (Pseudo-3D) */}
-        <div 
-          className="absolute top-full left-0 w-full h-4 bg-white/5 origin-top transform rotateX(-90deg)"
-          style={{ backgroundColor: `${color}20` }}
-        />
-        <div 
-          className="absolute top-0 -right-4 w-4 h-full bg-white/5 origin-left transform rotateY(90deg)"
-          style={{ backgroundColor: `${color}20` }}
-        />
-      </div>
-
-      {/* Floating Label (Connected to corner) */}
-      <motion.div 
-        initial={{ opacity: 0, x: -20 }}
-        whileInView={{ opacity: 1, x: 0 }}
-        transition={{ delay: delay + 0.5 }}
-        className="absolute -right-48 top-4 w-40 flex items-center gap-3"
-      >
-        <div className="h-[1px] w-16 bg-gradient-to-r from-white/50 to-transparent" />
-        <div className="text-left">
-          <h4 className="text-white font-bold text-sm tracking-wide uppercase">{label}</h4>
-          <p className="text-[10px] text-gray-400 font-mono">{sub}</p>
+    <div className="px-6 mb-32 mt-20">
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl md:text-5xl font-bold mb-4">
+            Versatile <span className="text-transparent bg-clip-text bg-gradient-to-r from-eko-emerald to-cyan-400">Integration</span>
+          </h2>
+          <p className="text-white/40 font-mono text-sm">Engineered for diverse atmospheric loads</p>
         </div>
-      </motion.div>
-    </motion.div>
-  );
-};
 
-// 3. Interactive 3D Controller
-const InteractiveStack = () => {
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-  
-  const rotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], [60, 80]), { stiffness: 100, damping: 20 });
-  const rotateZ = useSpring(useTransform(mouseX, [-0.5, 0.5], [-40, -50]), { stiffness: 100, damping: 20 });
-
-  const handleMouseMove = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const width = rect.width;
-    const height = rect.height;
-    mouseX.set((e.clientX - rect.left) / width - 0.5);
-    mouseY.set((e.clientY - rect.top) / height - 0.5);
-  };
-
-  const handleMouseLeave = () => {
-    mouseX.set(0);
-    mouseY.set(0);
-  };
-
-  return (
-    <div 
-      className="h-[900px] flex items-center justify-center relative perspective-1000 overflow-visible cursor-crosshair"
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-    >
-      {/* Atmosphere */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-eko-emerald/5 to-transparent pointer-events-none" />
-      
-      <div className="absolute top-10 left-1/2 -translate-x-1/2 text-white/30 text-[10px] font-mono border border-white/10 px-3 py-1 rounded-full backdrop-blur-md">
-        INTERACTIVE EXPLODED VIEW • DRAG TO ROTATE
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <DeploymentCard 
+            icon={Home} 
+            title="Residential" 
+            subtitle="Ideal for living rooms & apartments"
+            color="emerald"
+            delay={0.1}
+            points={[
+              "Ultra-quiet sleep mode (<25dB)",
+              "Ambient LED mood lighting",
+              "Pet dander & allergen filtration"
+            ]}
+          />
+          <DeploymentCard 
+            icon={Building2} 
+            title="Commercial" 
+            subtitle="High-traffic offices & lobbies"
+            color="blue"
+            delay={0.2}
+            points={[
+              "High-capacity CO₂ reduction",
+              "VOC removal from office equipment",
+              "Centralized MQTT dashboard"
+            ]}
+          />
+          <DeploymentCard 
+            icon={GraduationCap} 
+            title="Educational" 
+            subtitle="Schools, Labs & Museums"
+            color="orange"
+            delay={0.3}
+            points={[
+              "Visible bio-reactor for STEM learning",
+              "Safe, tamper-proof design",
+              "Real-time AQI display for students"
+            ]}
+          />
+        </div>
       </div>
-
-      <motion.div 
-        style={{ rotateX, rotateZ, transformStyle: 'preserve-3d' }}
-        className="relative w-64 h-64 md:w-80 md:h-80"
-      >
-        {/* The Steel Frame */}
-        <Chassis />
-
-        {/* 5. BIO CORE (Thick Liquid Tank) */}
-        <VolumetricSlab z={250} color="#10B981" label="Bio-Core Matrix" sub="120L Algae Culture" delay={0.1} isLiquid={true} />
-        
-        {/* 4. PCO */}
-        <VolumetricSlab z={140} color="#8b5cf6" label="PCO Reactor" sub="UV-A + TiO₂ Grid" delay={0.2} />
-        
-        {/* 3. HEPA */}
-        <VolumetricSlab z={30} color="#06b6d4" label="HEPA H13" sub="Medical Grade Fiber" delay={0.3} />
-        
-        {/* 2. ESP */}
-        <VolumetricSlab z={-80} color="#f59e0b" label="ESP Ionizer" sub="6kV Static Plates" delay={0.4} />
-        
-        {/* 1. BASE */}
-        <VolumetricSlab z={-190} color="#3b82f6" label="Cyclone Intake" sub="Heavy Particle Trap" delay={0.5} />
-
-        {/* Central Axis (The "Spine" of the machine) */}
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-[600px] bg-white/10" style={{ transform: 'translateZ(0px) rotateX(-90deg)' }} />
-
-      </motion.div>
     </div>
   );
 };
@@ -288,7 +230,6 @@ const SpecsPage = () => {
       <style>{`
         @keyframes gradient { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
         .animate-gradient { animation: gradient 4s ease infinite; }
-        .perspective-1000 { perspective: 1000px; }
       `}</style>
 
       <div className="relative z-10">
@@ -379,16 +320,8 @@ const SpecsPage = () => {
           </div>
         </div>
 
-        {/* --- NEW: SYSTEM ANATOMY (3D EXPLODED VIEW) --- */}
-        <div className="px-6 mb-32 mt-32">
-          <div className="max-w-7xl mx-auto text-center mb-16">
-            <h2 className="text-4xl md:text-6xl font-bold mb-4 tracking-tighter">
-              System <span className="text-transparent bg-clip-text bg-gradient-to-r from-eko-emerald to-cyan-400">Anatomy</span>
-            </h2>
-            <p className="text-white/40 font-mono text-sm">5-Stage Hybrid Filtration Stack Dissection</p>
-          </div>
-          <InteractiveStack />
-        </div>
+        {/* --- NEW: DEPLOYMENT SCENARIOS (Replaced 3D Section) --- */}
+        <DeploymentSection />
 
         {/* Certifications */}
         <div className="px-6 mb-12">
