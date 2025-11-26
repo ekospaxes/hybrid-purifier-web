@@ -86,9 +86,13 @@ const AQIGauge = ({ value, max, label, subLabel, pmValue }) => {
           />
         </svg>
         <div className="absolute flex flex-col items-center">
-          <span className={`text-5xl font-display font-bold ${status.color}`}>
+          <motion.span 
+             initial={{ opacity: 0, scale: 0.5 }}
+             animate={{ opacity: 1, scale: 1 }}
+             className={`text-5xl font-display font-bold ${status.color}`}
+          >
             {Math.round(safeVal)}
-          </span>
+          </motion.span>
           <span className="text-xs text-gray-500 font-mono uppercase mt-1">PM 2.5</span>
         </div>
       </div>
@@ -267,8 +271,9 @@ const DashboardPage = () => {
                   </h3>
                   <div className="text-xs font-mono text-gray-500">OPEN-METEO HISTORICAL</div>
               </div>
-              {/* FIXED DIMENSIONS TO STOP RECHARTS ERROR */}
-              <div style={{ width: '100%', height: '300px' }}>
+              
+              {/* FIX: Strict Container Dimensions + Conditional Render */}
+              <div style={{ width: '100%', height: 300 }}>
                  {hourly.length > 0 ? (
                    <ResponsiveContainer width="100%" height="100%">
                       <AreaChart data={hourly}>
@@ -286,7 +291,7 @@ const DashboardPage = () => {
                       </AreaChart>
                    </ResponsiveContainer>
                  ) : (
-                   <div className="w-full h-full flex items-center justify-center text-gray-500">Loading Data...</div>
+                   <div className="flex h-full items-center justify-center text-gray-500">Initializing Data Stream...</div>
                  )}
               </div>
            </GlassCard>
@@ -331,7 +336,7 @@ const DashboardPage = () => {
            </GlassCard>
         </div>
 
-        {/* BOTTOM: CHEMICALS */}
+        {/* BOTTOM: FULL SPECTRUM */}
         <div className="lg:col-span-12">
             <h3 className="text-white font-display text-2xl font-bold mb-6 flex items-center gap-3">
                <Beaker className="text-eko-emerald" /> 
