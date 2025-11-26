@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, useScroll, useTransform, useSpring, useMotionValue } from 'framer-motion';
 import { 
   ArrowLeft, Ruler, Zap, Container, Wifi, Layers, Clock,
   Droplets, Wind, Activity, Cpu, Database, Thermometer,
@@ -9,7 +9,6 @@ import {
 
 // --- HELPER COMPONENTS ---
 
-// Animated Gradient Text
 const AnimatedGradientText = ({ children, className = "" }) => (
   <span className={`relative inline-block ${className}`}>
     <span className="bg-gradient-to-r from-eko-emerald via-cyan-400 to-blue-500 bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient">
@@ -18,40 +17,29 @@ const AnimatedGradientText = ({ children, className = "" }) => (
   </span>
 );
 
-// Live Data Counter
 const LiveCounter = ({ target, suffix = "", prefix = "", duration = 2000 }) => {
   const [count, setCount] = useState(0);
   const [hasAnimated, setHasAnimated] = useState(false);
 
   useEffect(() => {
-    if (hasAnimated) {
-      setCount(target);
-      return;
-    }
+    if (hasAnimated) { setCount(target); return; }
     let startTime;
     let animationFrame;
     const animate = (timestamp) => {
       if (!startTime) startTime = timestamp;
       const progress = Math.min((timestamp - startTime) / duration, 1);
       setCount(Math.floor(progress * target));
-      if (progress < 1) {
-        animationFrame = requestAnimationFrame(animate);
-      } else {
-        setHasAnimated(true);
-      }
+      if (progress < 1) animationFrame = requestAnimationFrame(animate);
+      else setHasAnimated(true);
     };
     animationFrame = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(animationFrame);
   }, []);
 
-  useEffect(() => {
-    if (hasAnimated) setCount(target);
-  }, [target, hasAnimated]);
-
+  useEffect(() => { if (hasAnimated) setCount(target); }, [target, hasAnimated]);
   return <span className="font-mono font-bold">{prefix}{count}{suffix}</span>;
 };
 
-// Live Metric Card
 const LiveMetricCard = ({ icon: Icon, label, value, trend, delay }) => (
   <motion.div
     initial={{ opacity: 0, scale: 0.9 }}
@@ -64,53 +52,30 @@ const LiveMetricCard = ({ icon: Icon, label, value, trend, delay }) => (
       <div className="w-1.5 h-1.5 rounded-full bg-eko-emerald animate-pulse" />
       <span className="text-[8px] font-mono text-white/40 uppercase">LIVE</span>
     </div>
-    <div className="mb-4">
-      <Icon className="text-eko-emerald group-hover:text-cyan-400 transition-colors" size={24} />
-    </div>
+    <div className="mb-4"><Icon className="text-eko-emerald group-hover:text-cyan-400 transition-colors" size={24} /></div>
     <div className="text-3xl font-bold text-white mb-1">{value}</div>
     <div className="text-sm text-white/60 mb-2">{label}</div>
-    {trend && (
-      <div className="flex items-center gap-1 text-xs text-eko-emerald">
-        <TrendingUp size={12} />
-        <span>{trend}</span>
-      </div>
-    )}
+    {trend && <div className="flex items-center gap-1 text-xs text-eko-emerald"><TrendingUp size={12} /><span>{trend}</span></div>}
   </motion.div>
 );
 
-// Spec Card
 const SpecCard = ({ icon: Icon, value, label, description, delay, variant = 'emerald' }) => {
   const colors = {
-    emerald: {
-      iconHover: 'group-hover:text-eko-emerald',
-      iconBase: 'text-eko-emerald/30',
-      border: 'hover:border-eko-emerald/40',
-      glow: 'from-eko-emerald/0 via-eko-emerald/0 to-eko-emerald/10',
-      valueGlow: 'group-hover:text-eko-emerald group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]'
-    },
-    blue: {
-      iconHover: 'group-hover:text-cyan-400',
-      iconBase: 'text-cyan-500/30',
-      border: 'hover:border-cyan-400/40',
-      glow: 'from-cyan-500/0 via-cyan-500/0 to-cyan-500/10',
-      valueGlow: 'group-hover:text-cyan-400 group-hover:drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]'
-    }
+    emerald: { iconHover: 'group-hover:text-eko-emerald', iconBase: 'text-eko-emerald/30', border: 'hover:border-eko-emerald/40', glow: 'from-eko-emerald/0 via-eko-emerald/0 to-eko-emerald/10', valueGlow: 'group-hover:text-eko-emerald' },
+    blue: { iconHover: 'group-hover:text-cyan-400', iconBase: 'text-cyan-500/30', border: 'hover:border-cyan-400/40', glow: 'from-cyan-500/0 via-cyan-500/0 to-cyan-500/10', valueGlow: 'group-hover:text-cyan-400' }
   };
   const theme = colors[variant];
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ delay, duration: 0.6 }}
       viewport={{ once: true }}
       className={`relative bg-[#0a0a0a] border border-white/10 rounded-2xl p-8 ${theme.border} transition-all duration-500 group overflow-hidden`}
     >
       <div className={`absolute inset-0 bg-gradient-to-br ${theme.glow} opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none`} />
       <div className="relative z-10">
-        <div className="mb-6">
-          <Icon className={`${theme.iconBase} ${theme.iconHover} transition-all duration-500`} size={32} strokeWidth={1.5} />
-        </div>
+        <div className="mb-6"><Icon className={`${theme.iconBase} ${theme.iconHover} transition-all duration-500`} size={32} strokeWidth={1.5} /></div>
         <h3 className={`text-white font-bold text-3xl mb-2 tracking-tight transition-all duration-500 ${theme.valueGlow}`}>{value}</h3>
         <p className="text-white/60 font-medium text-lg mb-3">{label}</p>
         <p className="text-white/30 text-sm font-mono leading-relaxed">{description}</p>
@@ -119,14 +84,12 @@ const SpecCard = ({ icon: Icon, value, label, description, delay, variant = 'eme
   );
 };
 
-// Performance Card
 const PerformanceCard = ({ icon: Icon, value, unit, label, description, delay, variant = 'emerald' }) => {
   const colors = {
     emerald: { icon: 'text-eko-emerald/50 group-hover:text-eko-emerald', value: 'text-white', border: 'hover:border-eko-emerald/30' },
     blue: { icon: 'text-cyan-400/50 group-hover:text-cyan-400', value: 'text-white', border: 'hover:border-cyan-400/30' }
   };
   const theme = colors[variant];
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -136,181 +99,117 @@ const PerformanceCard = ({ icon: Icon, value, unit, label, description, delay, v
       className={`bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-4 ${theme.border} transition-all group`}
     >
       <div className="mb-3"><Icon className={`${theme.icon} transition-colors`} size={20} /></div>
-      <div className="flex items-baseline gap-1 mb-1">
-        <span className={`text-2xl font-bold ${theme.value}`}>{value}</span>
-        {unit && <span className="text-xs text-white/40 font-mono">{unit}</span>}
-      </div>
+      <div className="flex items-baseline gap-1 mb-1"><span className={`text-2xl font-bold ${theme.value}`}>{value}</span>{unit && <span className="text-xs text-white/40 font-mono">{unit}</span>}</div>
       <p className="text-white/60 text-xs font-medium mb-1">{label}</p>
       <p className="text-white/30 text-[10px] font-mono leading-relaxed">{description}</p>
     </motion.div>
   );
 };
 
-// --- 3D EXPLODED VIEW COMPONENTS (HIGH FIDELITY) ---
+// --- NEW: HOLOGRAPHIC 3D SECTION ---
 
-// 1. Texture Generator (CSS Patterns)
-const TechPattern = ({ type, color }) => {
-  const patterns = {
-    grid: {
-      backgroundImage: `linear-gradient(${color}30 1px, transparent 1px), linear-gradient(90deg, ${color}30 1px, transparent 1px)`,
-      backgroundSize: '20px 20px'
-    },
-    mesh: {
-      backgroundImage: `radial-gradient(${color}40 1px, transparent 1px)`,
-      backgroundSize: '8px 8px'
-    },
-    plates: {
-      backgroundImage: `repeating-linear-gradient(0deg, transparent, transparent 19px, ${color}40 20px)`,
-      backgroundSize: '100% 20px'
-    },
-    bio: {
-      background: `radial-gradient(circle at 30% 30%, ${color}20, transparent 60%), radial-gradient(circle at 70% 70%, ${color}10, transparent 60%)`,
-      filter: 'blur(10px)'
-    },
-    solid: {
-      background: `linear-gradient(135deg, ${color}10, transparent)`
-    }
-  };
-  return <div className="absolute inset-0 opacity-50" style={patterns[type] || patterns.solid} />;
+const HoloPlate = ({ z, color, label, sub, delay }) => {
+  return (
+    <motion.div
+      style={{ 
+        transform: `translateZ(${z}px)`,
+        boxShadow: `0 0 15px ${color}20, inset 0 0 20px ${color}10`
+      }}
+      initial={{ opacity: 0, scale: 0.5 }}
+      whileInView={{ opacity: 1, scale: 1 }}
+      transition={{ delay, duration: 0.8 }}
+      className="absolute w-64 h-64 md:w-80 md:h-80 rounded-2xl border border-white/20 bg-black/40 backdrop-blur-sm flex items-center justify-center group hover:border-white/50 transition-colors duration-300"
+    >
+      {/* Glowing Rim */}
+      <div className="absolute inset-0 rounded-2xl border border-white/5 opacity-50" style={{ borderColor: color }} />
+      
+      {/* Inner Tech Grid */}
+      <div className="absolute inset-4 border border-white/5 rounded-xl overflow-hidden opacity-30">
+        <div className="w-full h-full bg-[linear-gradient(rgba(255,255,255,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.1)_1px,transparent_1px)] bg-[size:20px_20px]" />
+      </div>
+
+      {/* Center Core Hole */}
+      <div className="w-16 h-16 rounded-full border border-white/10 bg-black/80 shadow-inner flex items-center justify-center relative">
+         <div className="w-12 h-12 rounded-full border border-dashed border-white/30 animate-spin-slow" style={{ borderColor: color }} />
+      </div>
+
+      {/* Floating Label */}
+      <motion.div 
+        initial={{ opacity: 0, x: -20 }}
+        whileInView={{ opacity: 1, x: 0 }}
+        transition={{ delay: delay + 0.5 }}
+        className="absolute -right-48 w-40 flex items-center gap-3"
+      >
+        <div className="h-[1px] w-12 bg-gradient-to-r from-white/50 to-transparent" />
+        <div className="text-left">
+          <h4 className="text-white font-bold text-sm tracking-wide drop-shadow-md" style={{ textShadow: `0 0 10px ${color}` }}>{label}</h4>
+          <p className="text-[10px] text-gray-400 font-mono uppercase">{sub}</p>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
 };
 
-// 2. The Layer itself
-const ExplodedLayer = ({ label, desc, zIndex, color, delay, texture }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 0, rotateX: 60, rotateZ: -45 }}
-    whileInView={{ 
-      opacity: 1, 
-      y: zIndex * -50, // Explosion gap
-      rotateX: 60, 
-      rotateZ: -45 
-    }}
-    viewport={{ once: true, margin: "-100px" }}
-    transition={{ delay: delay, duration: 1.2, type: "spring", bounce: 0.3 }}
-    className="absolute w-64 h-64 md:w-80 md:h-80 rounded-3xl border border-white/10 backdrop-blur-sm transition-all duration-500 group hover:border-white/40"
-    style={{ 
-      zIndex: zIndex,
-      backgroundColor: 'rgba(10, 10, 10, 0.6)', // Darker glass for realism
-      boxShadow: `0 0 0 1px ${color}20, 0 10px 40px -10px ${color}30` // Rim light
-    }}
-  >
-    {/* Texture */}
-    <TechPattern type={texture} color={color} />
+const InteractiveStack = () => {
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  
+  // Smooth spring physics for rotation
+  const rotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], [45, 75]), { stiffness: 150, damping: 20 });
+  const rotateZ = useSpring(useTransform(mouseX, [-0.5, 0.5], [-35, -55]), { stiffness: 150, damping: 20 });
 
-    {/* Hardware Screws */}
-    <div className="absolute top-3 left-3 w-2 h-2 rounded-full border border-white/20 bg-black/50" />
-    <div className="absolute top-3 right-3 w-2 h-2 rounded-full border border-white/20 bg-black/50" />
-    <div className="absolute bottom-3 left-3 w-2 h-2 rounded-full border border-white/20 bg-black/50" />
-    <div className="absolute bottom-3 right-3 w-2 h-2 rounded-full border border-white/20 bg-black/50" />
+  const handleMouseMove = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+    const mouseXVal = (e.clientX - rect.left) / width - 0.5;
+    const mouseYVal = (e.clientY - rect.top) / height - 0.5;
+    mouseX.set(mouseXVal);
+    mouseY.set(mouseYVal);
+  };
 
-    {/* Connection Line & Label */}
-    <motion.div 
-      initial={{ width: 0, opacity: 0 }}
-      whileInView={{ width: 100, opacity: 1 }}
-      transition={{ delay: delay + 0.8, duration: 0.5 }}
-      className="absolute top-1/2 right-0 h-[1px] bg-gradient-to-r from-white/40 to-transparent translate-x-full origin-left"
-    />
-    
-    <motion.div 
-      initial={{ opacity: 0, x: -10 }}
-      whileInView={{ opacity: 1, x: 60 }} 
-      transition={{ delay: delay + 0.8 }}
-      className="absolute top-1/2 -right-10 translate-x-full -translate-y-1/2 w-64 pl-12 pointer-events-none"
-    >
-      <div className="flex flex-col items-start">
-        <div className="flex items-center gap-2 mb-1">
-          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
-          <h4 className="text-sm font-bold text-white tracking-wide drop-shadow-md">{label}</h4>
-        </div>
-        <p className="text-[10px] font-mono text-gray-400 uppercase tracking-widest border-l border-white/20 pl-2 ml-1">
-          {desc}
-        </p>
-      </div>
-    </motion.div>
+  const handleMouseLeave = () => {
+    mouseX.set(0);
+    mouseY.set(0);
+  };
 
-    {/* 3D Thickness Illusion */}
-    <div 
-      className="absolute -bottom-2 left-1 right-[-1px] h-3 rounded-b-3xl" 
-      style={{ background: `linear-gradient(to bottom, ${color}40, transparent)` }} 
-    />
-  </motion.div>
-);
-
-// 3. The Container
-const ExplodedViewSection = () => {
   return (
-    <div className="px-6 mb-40 mt-20 relative z-10 overflow-visible">
-      <div className="max-w-7xl mx-auto">
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-40"
-        >
-          <h2 className="text-4xl md:text-6xl font-bold mb-4 tracking-tighter">
-            Anatomy of <span className="text-transparent bg-clip-text bg-gradient-to-r from-eko-emerald to-cyan-400">Purification</span>
-          </h2>
-          <p className="text-white/40 font-mono text-sm">Class X 120L // Hardware Breakdown</p>
-        </motion.div>
-
-        <div className="h-[800px] flex items-center justify-center relative perspective-1000">
-          {/* Center Glow */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-eko-emerald/5 rounded-full blur-[120px]" />
-
-          <div className="relative w-80 h-80" style={{ transformStyle: 'preserve-3d', transform: 'translateY(150px)' }}>
-            
-            {/* 5. Top: Bio-Core */}
-            <ExplodedLayer 
-              zIndex={5} 
-              color="#10B981" 
-              label="05. Bio-Core Matrix" 
-              desc="Chlorella Culture Fluid"
-              texture="bio"
-              delay={0.1}
-            />
-
-            {/* 4. PCO */}
-            <ExplodedLayer 
-              zIndex={4} 
-              color="#8b5cf6" 
-              label="04. PCO Reactor" 
-              desc="TiO₂ Coated Hex-Mesh"
-              texture="mesh"
-              delay={0.2}
-            />
-
-            {/* 3. HEPA */}
-            <ExplodedLayer 
-              zIndex={3} 
-              color="#06b6d4" 
-              label="03. HEPA H13" 
-              desc="0.3µm Fiber Matrix"
-              texture="grid"
-              delay={0.3}
-            />
-
-            {/* 2. ESP */}
-            <ExplodedLayer 
-              zIndex={2} 
-              color="#f59e0b" 
-              label="02. ESP Grid" 
-              desc="High-Voltage Plates"
-              texture="plates"
-              delay={0.4}
-            />
-
-            {/* 1. Bottom: Base */}
-            <ExplodedLayer 
-              zIndex={1} 
-              color="#3b82f6" 
-              label="01. Cyclone Base" 
-              desc="Centrifugal Intake"
-              texture="solid"
-              delay={0.5}
-            />
-
-          </div>
-        </div>
+    <div 
+      className="h-[800px] flex items-center justify-center relative perspective-1000 overflow-visible cursor-crosshair"
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+    >
+      {/* Atmosphere */}
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-eko-emerald/5 to-transparent pointer-events-none" />
+      
+      {/* Instruction Hint */}
+      <div className="absolute top-10 left-1/2 -translate-x-1/2 text-white/20 text-xs font-mono border border-white/10 px-3 py-1 rounded-full">
+        INTERACTIVE 3D VIEW
       </div>
+
+      <motion.div 
+        style={{ rotateX, rotateZ, transformStyle: 'preserve-3d' }}
+        className="relative w-64 h-64 md:w-80 md:h-80"
+      >
+        {/* Airflow Stream (Center Line) */}
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-[600px] bg-gradient-to-t from-transparent via-eko-emerald/50 to-transparent blur-sm" style={{ transform: 'translateZ(100px) rotateX(-90deg)' }} />
+
+        {/* 5. BIO CORE (Top) */}
+        <HoloPlate z={200} color="#10B981" label="Bio-Core Matrix" sub="Living Algae Culture" delay={0.1} />
+        
+        {/* 4. PCO */}
+        <HoloPlate z={100} color="#8b5cf6" label="PCO Reactor" sub="UV-A Oxidation" delay={0.2} />
+        
+        {/* 3. HEPA */}
+        <HoloPlate z={0} color="#06b6d4" label="HEPA H13" sub="0.3µm Filtration" delay={0.3} />
+        
+        {/* 2. ESP */}
+        <HoloPlate z={-100} color="#f59e0b" label="ESP Grid" sub="High-Voltage Static" delay={0.4} />
+        
+        {/* 1. BASE */}
+        <HoloPlate z={-200} color="#3b82f6" label="Cyclone Base" sub="Pre-Separator Intake" delay={0.5} />
+
+      </motion.div>
     </div>
   );
 };
@@ -450,8 +349,16 @@ const SpecsPage = () => {
           </div>
         </div>
 
-        {/* --- 3D EXPLODED VIEW --- */}
-        <ExplodedViewSection />
+        {/* --- INTERACTIVE 3D STACK (New Design) --- */}
+        <div className="px-6 mb-24 mt-32">
+          <div className="max-w-7xl mx-auto text-center mb-16">
+            <h2 className="text-4xl md:text-6xl font-bold mb-4 tracking-tighter">
+              System <span className="text-transparent bg-clip-text bg-gradient-to-r from-eko-emerald to-cyan-400">Anatomy</span>
+            </h2>
+            <p className="text-white/40 font-mono text-sm">Drag cursor to inspect the 5-stage fusion core</p>
+          </div>
+          <InteractiveStack />
+        </div>
 
         {/* Certifications */}
         <div className="px-6 mb-12">
