@@ -31,18 +31,15 @@ const downloadCSV = (filename, rows, delimiter = ',') => {
   const esc = (v) => {
     if (v === null || v === undefined) return '';
     const s = String(v);
-    if (s.includes('"') || s.includes('
-') || s.includes(delimiter)) {
+    if (s.includes('"') || s.includes('\n') || s.includes(delimiter)) {
       return `"${s.replace(/"/g, '""')}"`;
     }
     return s;
   };
   if (!rows || !rows.length) return;
   const header = Object.keys(rows[0]).join(delimiter);
-  const body = rows.map(r => Object.values(r).map(esc).join(delimiter)).join('
-');
-  const csv = header + '
-' + body;
+  const body = rows.map(r => Object.values(r).map(esc).join(delimiter)).join('\n');
+  const csv = header + '\n' + body;
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -143,10 +140,8 @@ const AQIGauge = ({ value, max, label, subLabel, pmValue }) => {
   );
 };
 
-$1
-
 // --- EXTRA: Animated Info Panel (AQI + Coordinates + Direction) ---
-const CountUp = ({end, duration=1000, format = (v)=>v}) => {
+const CountUp = ({ end, duration = 1000, format = (v) => v }) => {
   const [val, setVal] = useState(0);
   useEffect(() => {
     let start = null;
@@ -178,12 +173,19 @@ const getBearing = (lat1, lon1, lat2, lon2) => {
 const AnimatedInfoPanel = ({ coords, locationName, pm25, hourly }) => {
   const [prevCoords, setPrevCoords] = useState(coords);
   const [bearing, setBearing] = useState(0);
-  useEffect(() => { if (prevCoords && coords) { const b = getBearing(prevCoords.lat, prevCoords.lng, coords.lat, coords.lng); setBearing(b); setPrevCoords(coords); } }, [coords]);
+  useEffect(() => {
+    // when coords update, compute bearing from previous coords -> current coords
+    if (prevCoords && coords) {
+      const b = getBearing(prevCoords.lat, prevCoords.lng, coords.lat, coords.lng);
+      setBearing(b);
+      setPrevCoords(coords);
+    }
+  }, [coords]); // eslint-disable-line
 
   const trend = (() => {
     if (!hourly || hourly.length < 2) return 0;
-    const last = hourly[hourly.length-1].val;
-    const prev = hourly[hourly.length-2].val;
+    const last = hourly[hourly.length - 1].val;
+    const prev = hourly[hourly.length - 2].val;
     return Number((last - prev).toFixed(1));
   })();
 
@@ -194,7 +196,7 @@ const AnimatedInfoPanel = ({ coords, locationName, pm25, hourly }) => {
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-md border border-white/10 bg-black/50">
               <div className="text-xs text-gray-400 font-mono">AQI (PM2.5)</div>
-              <div className="text-4xl font-bold text-eko-emerald"><CountUp end={pm25} duration={700} format={(v)=>Math.round(v)} /></div>
+              <div className="text-4xl font-bold text-eko-emerald"><CountUp end={pm25} duration={700} format={(v) => Math.round(v)} /></div>
               <div className="text-xs text-gray-400 mt-1">{getPollutionStatus(pm25).label} <span className="text-[10px] text-gray-500">• {Math.abs(trend) > 0 ? (trend > 0 ? '↑' : '↓') + Math.abs(trend) : '—'}</span></div>
             </div>
 
@@ -206,8 +208,8 @@ const AnimatedInfoPanel = ({ coords, locationName, pm25, hourly }) => {
 
             <div className="w-36 text-center">
               <div className="text-xs text-gray-400 font-mono">Direction</div>
-              <div className="mx-auto mt-2 w-20 h-20 rounded-full border border-white/10 flex items-center justify-center bg-black/40" style={{transform: 'translateZ(0)'}}>
-                <div style={{transform: `rotate(${bearing}deg)`}} className="transition-transform duration-700">
+              <div className="mx-auto mt-2 w-20 h-20 rounded-full border border-white/10 flex items-center justify-center bg-black/40" style={{ transform: 'translateZ(0)' }}>
+                <div style={{ transform: `rotate(${bearing}deg)` }} className="transition-transform duration-700">
                   <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12 2 L15 9 L12 7 L9 9 Z" />
                     <line x1="12" y1="7" x2="12" y2="22" />
@@ -542,9 +544,10 @@ const DashboardPage = () => {
             </div>
           </div>
 
+          {/* Inserted Animated info panel */}
           <AnimatedInfoPanel coords={coords} locationName={locationName} pm25={calcPM25} hourly={hourly} />
 
-$1
+          <GlassCard className="p-6 min-w-0">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-white font-bold flex items-center gap-2"><Activity size={18} className="text-eko-emerald" /> 24-Hour Pollution Trend (PM 2.5)</h3>
 
@@ -641,7 +644,7 @@ $1
 
               <div className="flex items-center justify-between"><div className="text-sm text-gray-300">Interval (s)</div><input type="number" min={10} value={refreshInterval} onChange={(e) => { const v = Number(e.target.value) || 10; setRefreshInterval(v); localStorage.setItem('refreshInterval', String(v)); }} className="w-20 bg-[#0b0b0b] border border-white/10 px-2 py-1 rounded text-sm text-white" /></div>
 
-              <div className="flex items-center justify-between"><div className="text-sm text-gray-300">CSV delimiter</div><select value={csvDelimiter} onChange={(e) => { setCsvDelimiter(e.target.value); localStorage.setItem('csvDelimiter', e.target.value); }} className="bg-[#0b0b0b] border border-white/10 px-2 py-1 rounded text-sm text-white"><option value=",">Comma (,)</option><option value=";">Semicolon (;)</option><option value="	">Tab</option></select></div>
+              <div className="flex items-center justify-between"><div className="text-sm text-gray-300">CSV delimiter</div><select value={csvDelimiter} onChange={(e) => { setCsvDelimiter(e.target.value); localStorage.setItem('csvDelimiter', e.target.value); }} className="bg-[#0b0b0b] border border-white/10 px-2 py-1 rounded text-sm text-white"><option value=",">Comma (,)</option><option value=";">Semicolon (;)</option><option value="\t">Tab</option></select></div>
 
               <div className="flex items-center gap-2"><button type="button" onClick={clearStorage} disabled={clearing} className={`text-xs px-3 py-2 bg-black/70 border border-white/10 rounded ${clearing ? 'opacity-60 cursor-wait' : ''}`}>
                 {clearing ? <Spinner size={14} /> : 'Clear storage'}</button><button type="button" onClick={() => { setShowRaw(true); setToasts({ show: true, message: 'Raw JSON opened' }); setTimeout(() => setToasts({ show: false, message: '' }), 1400); }} className="text-xs px-3 py-2 bg-black/70 border border-white/10 rounded">Open raw</button></div>
