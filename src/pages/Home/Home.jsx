@@ -19,11 +19,12 @@ const Home = () => {
         <Sensors />
       </div>
 
+      <EcosystemMap /> 
+
       <div id="impact">
         <Impact />
       </div>
       
-      {/* We keep Specs on home for flow, but also have a separate page */}
       <div id="specs">
         <Specs />
       </div>
