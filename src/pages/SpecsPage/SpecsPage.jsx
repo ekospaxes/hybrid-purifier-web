@@ -146,79 +146,125 @@ const PerformanceCard = ({ icon: Icon, value, unit, label, description, delay, v
   );
 };
 
-// --- 3D EXPLODED VIEW COMPONENTS (NEW) ---
+// --- 3D EXPLODED VIEW COMPONENTS (HIGH FIDELITY) ---
 
-const ExplodedLayer = ({ label, desc, zIndex, color, delay }) => (
+// 1. Texture Generator (CSS Patterns)
+const TechPattern = ({ type, color }) => {
+  const patterns = {
+    grid: {
+      backgroundImage: `linear-gradient(${color}30 1px, transparent 1px), linear-gradient(90deg, ${color}30 1px, transparent 1px)`,
+      backgroundSize: '20px 20px'
+    },
+    mesh: {
+      backgroundImage: `radial-gradient(${color}40 1px, transparent 1px)`,
+      backgroundSize: '8px 8px'
+    },
+    plates: {
+      backgroundImage: `repeating-linear-gradient(0deg, transparent, transparent 19px, ${color}40 20px)`,
+      backgroundSize: '100% 20px'
+    },
+    bio: {
+      background: `radial-gradient(circle at 30% 30%, ${color}20, transparent 60%), radial-gradient(circle at 70% 70%, ${color}10, transparent 60%)`,
+      filter: 'blur(10px)'
+    },
+    solid: {
+      background: `linear-gradient(135deg, ${color}10, transparent)`
+    }
+  };
+  return <div className="absolute inset-0 opacity-50" style={patterns[type] || patterns.solid} />;
+};
+
+// 2. The Layer itself
+const ExplodedLayer = ({ label, desc, zIndex, color, delay, texture }) => (
   <motion.div
     initial={{ opacity: 0, y: 0, rotateX: 60, rotateZ: -45 }}
     whileInView={{ 
       opacity: 1, 
-      y: zIndex * -60, // The explosion distance
+      y: zIndex * -50, // Explosion gap
       rotateX: 60, 
       rotateZ: -45 
     }}
     viewport={{ once: true, margin: "-100px" }}
-    transition={{ delay: delay, duration: 1.5, type: "spring", stiffness: 50 }}
-    className="absolute w-64 h-64 md:w-80 md:h-80 rounded-3xl border border-white/10 backdrop-blur-md transition-all duration-500 group hover:border-white/40"
+    transition={{ delay: delay, duration: 1.2, type: "spring", bounce: 0.3 }}
+    className="absolute w-64 h-64 md:w-80 md:h-80 rounded-3xl border border-white/10 backdrop-blur-sm transition-all duration-500 group hover:border-white/40"
     style={{ 
       zIndex: zIndex,
-      background: `linear-gradient(135deg, ${color}15, rgba(0,0,0,0.4))`,
-      boxShadow: `0 0 30px ${color}10, inset 0 0 20px ${color}05`
+      backgroundColor: 'rgba(10, 10, 10, 0.6)', // Darker glass for realism
+      boxShadow: `0 0 0 1px ${color}20, 0 10px 40px -10px ${color}30` // Rim light
     }}
   >
-    {/* Connection Line */}
+    {/* Texture */}
+    <TechPattern type={texture} color={color} />
+
+    {/* Hardware Screws */}
+    <div className="absolute top-3 left-3 w-2 h-2 rounded-full border border-white/20 bg-black/50" />
+    <div className="absolute top-3 right-3 w-2 h-2 rounded-full border border-white/20 bg-black/50" />
+    <div className="absolute bottom-3 left-3 w-2 h-2 rounded-full border border-white/20 bg-black/50" />
+    <div className="absolute bottom-3 right-3 w-2 h-2 rounded-full border border-white/20 bg-black/50" />
+
+    {/* Connection Line & Label */}
     <motion.div 
       initial={{ width: 0, opacity: 0 }}
-      whileInView={{ width: 80, opacity: 1 }}
+      whileInView={{ width: 100, opacity: 1 }}
       transition={{ delay: delay + 0.8, duration: 0.5 }}
-      className="absolute top-1/2 right-0 h-[1px] bg-gradient-to-r from-white/30 to-transparent translate-x-full origin-left"
+      className="absolute top-1/2 right-0 h-[1px] bg-gradient-to-r from-white/40 to-transparent translate-x-full origin-left"
     />
     
-    {/* Label */}
     <motion.div 
       initial={{ opacity: 0, x: -10 }}
-      whileInView={{ opacity: 1, x: 40 }} // Push label out
+      whileInView={{ opacity: 1, x: 60 }} 
       transition={{ delay: delay + 0.8 }}
-      className="absolute top-1/2 -right-8 translate-x-full -translate-y-1/2 w-56 pl-12 pointer-events-none"
+      className="absolute top-1/2 -right-10 translate-x-full -translate-y-1/2 w-64 pl-12 pointer-events-none"
     >
-      <h4 className="text-sm font-bold text-white tracking-wide drop-shadow-md">{label}</h4>
-      <p className={`text-[10px] font-mono uppercase tracking-widest mt-1`} style={{ color: color }}>{desc}</p>
+      <div className="flex flex-col items-start">
+        <div className="flex items-center gap-2 mb-1">
+          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
+          <h4 className="text-sm font-bold text-white tracking-wide drop-shadow-md">{label}</h4>
+        </div>
+        <p className="text-[10px] font-mono text-gray-400 uppercase tracking-widest border-l border-white/20 pl-2 ml-1">
+          {desc}
+        </p>
+      </div>
     </motion.div>
 
     {/* 3D Thickness Illusion */}
-    <div className="absolute -bottom-2 left-2 right-[-2px] h-2 bg-white/5 rounded-b-3xl blur-[1px]" />
+    <div 
+      className="absolute -bottom-2 left-1 right-[-1px] h-3 rounded-b-3xl" 
+      style={{ background: `linear-gradient(to bottom, ${color}40, transparent)` }} 
+    />
   </motion.div>
 );
 
+// 3. The Container
 const ExplodedViewSection = () => {
   return (
-    <div className="px-6 mb-40 mt-20 relative z-10">
+    <div className="px-6 mb-40 mt-20 relative z-10 overflow-visible">
       <div className="max-w-7xl mx-auto">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center mb-32"
+          className="text-center mb-40"
         >
           <h2 className="text-4xl md:text-6xl font-bold mb-4 tracking-tighter">
             Anatomy of <span className="text-transparent bg-clip-text bg-gradient-to-r from-eko-emerald to-cyan-400">Purification</span>
           </h2>
-          <p className="text-white/40 font-mono text-sm">5-Stage Hybrid Filtration Stack Dissection</p>
+          <p className="text-white/40 font-mono text-sm">Class X 120L // Hardware Breakdown</p>
         </motion.div>
 
-        {/* 3D Stage */}
-        <div className="h-[700px] flex items-center justify-center relative perspective-1000">
+        <div className="h-[800px] flex items-center justify-center relative perspective-1000">
           {/* Center Glow */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-eko-emerald/5 rounded-full blur-[120px]" />
 
-          <div className="relative w-80 h-80" style={{ transformStyle: 'preserve-3d', transform: 'translateY(100px)' }}>
+          <div className="relative w-80 h-80" style={{ transformStyle: 'preserve-3d', transform: 'translateY(150px)' }}>
             
             {/* 5. Top: Bio-Core */}
             <ExplodedLayer 
               zIndex={5} 
               color="#10B981" 
               label="05. Bio-Core Matrix" 
-              desc="Chlorella Pyrenoidosa Culture"
+              desc="Chlorella Culture Fluid"
+              texture="bio"
               delay={0.1}
             />
 
@@ -227,7 +273,8 @@ const ExplodedViewSection = () => {
               zIndex={4} 
               color="#8b5cf6" 
               label="04. PCO Reactor" 
-              desc="UV-A + TiO₂ Oxidation"
+              desc="TiO₂ Coated Hex-Mesh"
+              texture="mesh"
               delay={0.2}
             />
 
@@ -236,7 +283,8 @@ const ExplodedViewSection = () => {
               zIndex={3} 
               color="#06b6d4" 
               label="03. HEPA H13" 
-              desc="Medical Grade (0.3µm)"
+              desc="0.3µm Fiber Matrix"
+              texture="grid"
               delay={0.3}
             />
 
@@ -245,7 +293,8 @@ const ExplodedViewSection = () => {
               zIndex={2} 
               color="#f59e0b" 
               label="02. ESP Grid" 
-              desc="Electrostatic Precipitation (6kV)"
+              desc="High-Voltage Plates"
+              texture="plates"
               delay={0.4}
             />
 
@@ -254,7 +303,8 @@ const ExplodedViewSection = () => {
               zIndex={1} 
               color="#3b82f6" 
               label="01. Cyclone Base" 
-              desc="Centrifugal Pre-Separator"
+              desc="Centrifugal Intake"
+              texture="solid"
               delay={0.5}
             />
 
@@ -400,7 +450,7 @@ const SpecsPage = () => {
           </div>
         </div>
 
-        {/* --- 3D ANATOMY SHOWCASE (The New Feature) --- */}
+        {/* --- 3D EXPLODED VIEW --- */}
         <ExplodedViewSection />
 
         {/* Certifications */}
