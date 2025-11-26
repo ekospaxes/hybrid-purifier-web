@@ -4,6 +4,7 @@ import Technology from './Technology/Technology';
 import Sensors from './Sensors/Sensors';
 import Impact from './Impact/Impact';
 import Specs from './Specs/Specs';
+import EcosystemMap from '../../components/ui/EcosystemMap';
 
 const Home = () => {
   return (
