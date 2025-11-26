@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'; // Import Router
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import Lenis from 'lenis';
 import 'lenis/dist/lenis.css';
 
@@ -14,7 +14,6 @@ import Simulator from './pages/Simulator/Simulator';
 import SpecsPage from './pages/SpecsPage/SpecsPage';
 import DashboardPage from './pages/Dashboard/DashboardPage';
 
-// ScrollToTop Helper: Ensures new pages start at the top
 const ScrollToTop = () => {
   const { pathname } = useLocation();
   useEffect(() => {
@@ -43,10 +42,7 @@ function AppContent() {
     <div className="antialiased selection:bg-eko-emerald/30 selection:text-white bg-black">
       <div className="grain-overlay" />
       <ScrollToTop />
-      
-      {/* Navbar is inside Router so links work */}
       <Navbar /> 
-
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/coming-soon" element={<ComingSoon />} />
@@ -54,7 +50,6 @@ function AppContent() {
         <Route path="/specs" element={<SpecsPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
       </Routes>
-
       <Footer />
     </div>
   );
