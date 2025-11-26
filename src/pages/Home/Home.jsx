@@ -3,7 +3,7 @@ import Hero from './Hero/Hero';
 import Technology from './Technology/Technology';
 import Sensors from './Sensors/Sensors';
 import Impact from './Impact/Impact';
-import Specs from './Specs/Specs';
+import Specs from './Specs/Specs'; // This is the component, not the page
 import EcosystemMap from '../../components/ui/EcosystemMap';
 
 const Home = () => {
@@ -25,6 +25,7 @@ const Home = () => {
         <Impact />
       </div>
       
+      {/* This is the summary specs section on the homepage */}
       <div id="specs">
         <Specs />
       </div>
