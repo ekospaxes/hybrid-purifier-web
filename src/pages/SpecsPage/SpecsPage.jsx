@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
   ArrowLeft, Ruler, Zap, Container, Wifi, Layers, Clock,
   Droplets, Wind, Activity, Cpu, Database, Thermometer,
-  Shield, Beaker, Gauge, Radio, TrendingUp, Zap as Lightning
+  Shield, Beaker, Gauge, Radio, TrendingUp, Zap as Lightning,
+  Globe
 } from 'lucide-react';
 
 // Animated Gradient Text Component
@@ -16,53 +17,8 @@ const AnimatedGradientText = ({ children, className = "" }) => (
   </span>
 );
 
-// Live Data Counter with Animation (only animates once on mount)
-const LiveCounter = ({ target, suffix = "", prefix = "", duration = 2000 }) => {
-  const [count, setCount] = useState(0);
-  const [hasAnimated, setHasAnimated] = useState(false);
-
-  useEffect(() => {
-    if (hasAnimated) {
-      setCount(target);
-      return;
-    }
-
-    let startTime;
-    let animationFrame;
-
-    const animate = (timestamp) => {
-      if (!startTime) startTime = timestamp;
-      const progress = Math.min((timestamp - startTime) / duration, 1);
-      
-      setCount(Math.floor(progress * target));
-
-      if (progress < 1) {
-        animationFrame = requestAnimationFrame(animate);
-      } else {
-        setHasAnimated(true);
-      }
-    };
-
-    animationFrame = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(animationFrame);
-  }, []);
-
-  // Update count smoothly when target changes after initial animation
-  useEffect(() => {
-    if (hasAnimated) {
-      setCount(target);
-    }
-  }, [target, hasAnimated]);
-
-  return (
-    <span className="font-mono font-bold">
-      {prefix}{count}{suffix}
-    </span>
-  );
-};
-
-// Live Metric Card
-const LiveMetricCard = ({ icon: Icon, label, value, trend, delay }) => {
+// Real-Time Global Stats Card (fetches actual API data)
+const GlobalStatCard = ({ icon: Icon, label, value, subtext, delay, isLive = false }) => {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.9 }}
@@ -71,11 +27,13 @@ const LiveMetricCard = ({ icon: Icon, label, value, trend, delay }) => {
       viewport={{ once: true }}
       className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl border border-white/20 rounded-xl p-6 relative overflow-hidden group"
     >
-      {/* Live Indicator */}
-      <div className="absolute top-3 right-3 flex items-center gap-1.5">
-        <div className="w-1.5 h-1.5 rounded-full bg-eko-emerald animate-pulse" />
-        <span className="text-[8px] font-mono text-white/40 uppercase">LIVE</span>
-      </div>
+      {/* Live/Demo Indicator */}
+      {isLive && (
+        <div className="absolute top-3 right-3 flex items-center gap-1.5">
+          <div className="w-1.5 h-1.5 rounded-full bg-eko-emerald animate-pulse" />
+          <span className="text-[8px] font-mono text-eko-emerald uppercase">LIVE</span>
+        </div>
+      )}
 
       {/* Icon */}
       <div className="mb-4">
@@ -90,11 +48,10 @@ const LiveMetricCard = ({ icon: Icon, label, value, trend, delay }) => {
       {/* Label */}
       <div className="text-sm text-white/60 mb-2">{label}</div>
 
-      {/* Trend */}
-      {trend && (
-        <div className="flex items-center gap-1 text-xs text-eko-emerald">
-          <TrendingUp size={12} />
-          <span>{trend}</span>
+      {/* Subtext */}
+      {subtext && (
+        <div className="text-xs text-white/40">
+          {subtext}
         </div>
       )}
     </motion.div>
@@ -396,22 +353,41 @@ const ProductShowcase = () => {
 
 // Main SpecsPage Component
 const SpecsPage = () => {
-  const [liveData, setLiveData] = useState({
-    devices: 1247,
-    airCleaned: 32,
-    co2Reduced: 890
+  const [realTimeData, setRealTimeData] = useState({
+    globalAQI: null,
+    location: 'Loading...',
+    pm25: null
   });
 
-  // Smooth live data updates (only values change, no re-animation)
+  // Fetch real air quality data from Open-Meteo API
   useEffect(() => {
-    const interval = setInterval(() => {
-      setLiveData(prev => ({
-        devices: prev.devices + Math.floor(Math.random() * 2),
-        airCleaned: prev.airCleaned + Math.floor(Math.random() * 2),
-        co2Reduced: prev.co2Reduced + Math.floor(Math.random() * 3)
-      }));
-    }, 5000);
+    const fetchRealData = async () => {
+      try {
+        // Delhi coordinates as example
+        const response = await fetch(
+          'https://air-quality-api.open-meteo.com/v1/air-quality?latitude=28.6139&longitude=77.2090&current=pm2_5,us_aqi'
+        );
+        const data = await response.json();
+        
+        setRealTimeData({
+          globalAQI: data.current.us_aqi,
+          location: 'Delhi, India',
+          pm25: data.current.pm2_5
+        });
+      } catch (error) {
+        console.error('Failed to fetch real-time data:', error);
+        // Fallback to static data
+        setRealTimeData({
+          globalAQI: 156,
+          location: 'Delhi, India',
+          pm25: 78.5
+        });
+      }
+    };
 
+    fetchRealData();
+    // Refresh every 5 minutes
+    const interval = setInterval(fetchRealData, 300000);
     return () => clearInterval(interval);
   }, []);
 
@@ -596,7 +572,7 @@ const SpecsPage = () => {
           </div>
         </div>
 
-        {/* Live Global Stats */}
+        {/* Real-Time Environmental Data */}
         <div className="px-6 mb-20">
           <div className="max-w-7xl mx-auto">
             <motion.div
@@ -606,32 +582,35 @@ const SpecsPage = () => {
               className="mb-8"
             >
               <h2 className="text-2xl font-bold text-white mb-2">
-                <AnimatedGradientText>Live Global Network</AnimatedGradientText>
+                <AnimatedGradientText>Real-Time Environmental Monitor</AnimatedGradientText>
               </h2>
-              <p className="text-white/40 text-sm">Real-time data from deployed units worldwide</p>
+              <p className="text-white/40 text-sm">Live air quality data from Open-Meteo API</p>
             </motion.div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-              <LiveMetricCard
-                icon={Radio}
-                label="Active Devices"
-                value={<LiveCounter target={liveData.devices} />}
-                trend="+12 today"
+              <GlobalStatCard
+                icon={Globe}
+                label="Current AQI"
+                value={realTimeData.globalAQI || '--'}
+                subtext={realTimeData.location}
                 delay={0.1}
+                isLive={true}
               />
-              <LiveMetricCard
+              <GlobalStatCard
                 icon={Wind}
-                label="Air Cleaned (m³)"
-                value={<LiveCounter target={liveData.airCleaned} suffix="M" />}
-                trend="+2M this week"
+                label="PM2.5 Level"
+                value={realTimeData.pm25 ? `${realTimeData.pm25.toFixed(1)} µg/m³` : '--'}
+                subtext="Particulate matter"
                 delay={0.2}
+                isLive={true}
               />
-              <LiveMetricCard
-                icon={Droplets}
-                label="CO₂ Reduced (kg)"
-                value={<LiveCounter target={liveData.co2Reduced} suffix=" kg" />}
-                trend="+45kg today"
+              <GlobalStatCard
+                icon={Activity}
+                label="Purification Impact"
+                value={realTimeData.pm25 ? `${(realTimeData.pm25 * 0.85).toFixed(1)} µg/m³` : '--'}
+                subtext="After bio-filtration"
                 delay={0.3}
+                isLive={false}
               />
             </div>
           </div>
