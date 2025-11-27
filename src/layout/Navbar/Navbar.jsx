@@ -3,25 +3,26 @@ import { motion } from 'framer-motion';
 import { Atom, Menu } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
+
 const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
+
   // Function to handle scroll or navigation
   const handleScroll = (id) => {
     if (location.pathname !== '/') {
-      // If not on home, go home first, then scroll (using setTimeout to wait for load)
       navigate('/');
       setTimeout(() => {
         const element = document.getElementById(id);
         if (element) element.scrollIntoView({ behavior: 'smooth' });
       }, 100);
     } else {
-      // If already on home, just scroll
       const element = document.getElementById(id);
       if (element) element.scrollIntoView({ behavior: 'smooth' });
     }
   };
+
 
   return (
     <motion.nav 
@@ -33,7 +34,7 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto">
         <div className="bg-black/60 backdrop-blur-xl border border-white/10 rounded-full px-6 h-14 flex items-center justify-between shadow-[0_0_20px_rgba(0,0,0,0.5)]">
           
-          {/* Logo - Always goes Home */}
+          {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
             <div className="bg-eko-emerald/20 p-1.5 rounded-full">
               <Atom className="w-5 h-5 text-eko-neon" />
@@ -43,17 +44,27 @@ const Navbar = () => {
             </span>
           </Link>
 
-          {/* Nav Links - Using Scroll Logic */}
-          <div className="hidden md:flex gap-8 text-sm font-medium text-gray-400">
+
+          {/* Nav Links */}
+          <div className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-400">
             <button onClick={() => handleScroll('technology')} className="hover:text-eko-neon transition-colors">Technology</button>
             <button onClick={() => handleScroll('sensors')} className="hover:text-eko-neon transition-colors">Sensors</button>
             <button onClick={() => handleScroll('impact')} className="hover:text-eko-neon transition-colors">Impact</button>
             
-            {/* Dashboard is a separate page */}
+            {/* Direct Page Links */}
+            <div className="w-px h-4 bg-white/10" />
             <Link to="/dashboard" className="hover:text-eko-neon transition-colors">Dashboard</Link>
+            
+            {/* --- NEW LINK ADDED HERE --- */}
+            <Link to="/deep-dive" className="text-eko-neon hover:text-white transition-colors flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-eko-neon animate-pulse" />
+                Deep Dive
+            </Link>
+
           </div>
 
-          {/* CTA - Links to Coming Soon */}
+
+          {/* CTA */}
           <div className="flex items-center gap-4">
             <Link to="/coming-soon">
               <button className="hidden md:block bg-white text-black text-xs font-bold px-5 py-2 rounded-full hover:bg-eko-neon transition-colors">
@@ -67,5 +78,6 @@ const Navbar = () => {
     </motion.nav>
   );
 };
+
 
 export default Navbar;

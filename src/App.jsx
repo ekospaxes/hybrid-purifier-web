@@ -14,6 +14,7 @@ import ComingSoon from './pages/ComingSoon/ComingSoon';
 import Simulator from './pages/Simulator/Simulator';
 import SpecsPage from './pages/SpecsPage/SpecsPage';
 import DashboardPage from './pages/Dashboard/DashboardPage';
+import DeepDive from './pages/DeepDive/DeepDive';
 
 // --- HELPER: SCROLL TO TOP ON ROUTE CHANGE ---
 const ScrollToTop = () => {
@@ -73,6 +74,7 @@ function AppContent() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/simulator" element={<Simulator />} />
           <Route path="/coming-soon" element={<ComingSoon />} />
+          <Route path="/deep-dive" element={<DeepDive />} /> 
           
           {/* Fallback */}
           <Route path="*" element={<Home />} /> 
