@@ -138,6 +138,7 @@ const PhysicsEngine = () => {
   }, []);
 
   return (
+    <div className="h-screen w-full bg-black text-white overflow-hidden flex pt-[90px] md:pt-[100px]">
     <div className="h-full flex flex-col gap-6">
       <div className="flex justify-between items-end">
         <div>
