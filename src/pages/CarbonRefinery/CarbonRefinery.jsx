@@ -512,7 +512,7 @@ const CarbonRefinery = () => {
                 </div>
                 <div className="bg-zinc-900/50 border border-white/10 p-6 rounded-2xl group hover:border-purple-500/30 transition-colors">
                     <Gauge className="text-purple-400 mb-4 group-hover:scale-110 transition-transform" size={24} />
-                    <div className="text-3xl font-bold text-white mb-1">0%</div>
+                    <div className="text-3xl font-bold text-white mb-1">~0%</div>
                     <div className="text-xs text-white/40">Backpressure Loss</div>
                 </div>
                 <div className="bg-zinc-900/50 border border-white/10 p-6 rounded-2xl group hover:border-emerald-500/30 transition-colors">
@@ -541,10 +541,10 @@ const CarbonRefinery = () => {
               </div>
               <div className="flex gap-4">
                    <div className="flex items-center gap-2 text-xs text-white/30 font-mono border border-white/10 px-4 py-2 rounded-full">
-                       <CheckCircle size={14} className="text-emerald-500" /> EURO 7 COMPLIANT
+                       <Snowflake size={14} className="text-cyan-500" /> CRYOGENIC TECH
                    </div>
                    <div className="flex items-center gap-2 text-xs text-white/30 font-mono border border-white/10 px-4 py-2 rounded-full">
-                       <Snowflake size={14} className="text-cyan-500" /> CRYOGENIC TECH
+                       <CheckCircle size={14} className="text-emerald-500" /> EURO 7 COMPLIANT (Under Testing Actual Variant May Vary)
                    </div>
               </div>
           </div>
