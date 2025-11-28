@@ -470,7 +470,7 @@ const DeepDive = () => {
   ];
 
   return (
-    <div className="h-screen w-full bg-black text-white overflow-hidden flex">
+    <div className="min-h-screen w-full bg-black text-white overflow-hidden flex">
       {/* --- LEFT COMMAND DECK --- */}
       <div className="w-20 md:w-72 border-r border-white/10 bg-black/50 backdrop-blur-xl flex flex-col z-20">
         <div className="p-6 border-b border-white/10">
