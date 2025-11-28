@@ -1,3 +1,4 @@
+// src/components/DeepDive.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import anime from 'animejs';
@@ -8,7 +9,7 @@ import {
 import { Link } from 'react-router-dom';
 
 // ==========================================
-// 0. SHARED UI COMPONENTS
+// Shared UI
 // ==========================================
 const Typewriter = ({ text, delay = 0, className = "" }) => {
   const [display, setDisplay] = useState("");
@@ -40,7 +41,6 @@ const Typewriter = ({ text, delay = 0, className = "" }) => {
 
 const Panel = ({ children, className = "" }) => (
   <div className={`bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden relative ${className}`}>
-    {/* CSS Noise */}
     <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
          style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}>
     </div>
@@ -49,7 +49,7 @@ const Panel = ({ children, className = "" }) => (
 );
 
 // ==========================================
-// 1. PHYSICS ENGINE
+// PhysicsEngine
 // ==========================================
 const PhysicsEngine = () => {
   const canvasRef = useRef(null);
@@ -62,15 +62,12 @@ const PhysicsEngine = () => {
 
     const ctx = canvas.getContext('2d');
 
-    // Initialize size and particles
     const resize = () => {
-      // ensure CSS layout applied first
       const w = Math.max(300, canvas.offsetWidth || 600);
       const h = Math.max(200, canvas.offsetHeight || 400);
       canvas.width = w;
       canvas.height = h;
 
-      // regenerate particles so radius bounds match new size
       particlesRef.current = Array.from({ length: 60 }, () => ({
         x: w / 2,
         y: h / 2,
@@ -85,15 +82,10 @@ const PhysicsEngine = () => {
     resize();
     window.addEventListener('resize', resize);
 
-    let w = canvas.width;
-    let h = canvas.height;
-
     const animate = () => {
-      // refresh current size each frame (handles e.g. layout changes)
-      w = canvas.width;
-      h = canvas.height;
+      const w = canvas.width;
+      const h = canvas.height;
 
-      // trailing background for motion blur effect (tunable)
       ctx.fillStyle = 'rgba(0,0,0,0.18)';
       ctx.fillRect(0, 0, w, h);
 
@@ -118,7 +110,6 @@ const PhysicsEngine = () => {
         ctx.fill();
       }
 
-      // central ring
       ctx.beginPath();
       ctx.arc(w / 2, h / 2, 30, 0, Math.PI * 2);
       ctx.strokeStyle = '#10B981';
@@ -138,7 +129,6 @@ const PhysicsEngine = () => {
   }, []);
 
   return (
-    <div className="h-screen w-full bg-black text-white overflow-hidden flex pt-[90px] md:pt-[100px]">
     <div className="h-full flex flex-col gap-6">
       <div className="flex justify-between items-end">
         <div>
@@ -186,14 +176,13 @@ const PhysicsEngine = () => {
 };
 
 // ==========================================
-// 2. CHEMISTRY REACTOR
+// ChemicalReactor
 // ==========================================
 const ChemicalReactor = () => {
   const containerRef = useRef(null);
   const animeInstanceRef = useRef(null);
 
   useEffect(() => {
-    // position radicals initially in the container center if possible
     const container = containerRef.current;
     if (container) {
       const rect = container.getBoundingClientRect();
@@ -216,11 +205,9 @@ const ChemicalReactor = () => {
     });
 
     return () => {
-      // kill anime instance to avoid stray loops
       if (animeInstanceRef.current && animeInstanceRef.current.pause) {
         try { animeInstanceRef.current.pause(); } catch (e) { /* noop */ }
       }
-      // cleanup any inline transform state
       const reds = container ? container.querySelectorAll('.radical') : [];
       reds.forEach(el => {
         el.style.transform = '';
@@ -293,7 +280,7 @@ const ChemicalReactor = () => {
 };
 
 // ==========================================
-// 3. MATERIALS
+// Materials
 // ==========================================
 const Materials = () => {
   const items = [
@@ -340,7 +327,7 @@ const Materials = () => {
 };
 
 // ==========================================
-// 4. SENSORS
+// Sensors
 // ==========================================
 const Sensors = () => {
   const sensorData = [
@@ -387,7 +374,7 @@ const Sensors = () => {
 };
 
 // ==========================================
-// 5. LOGIC CORE
+// Logic
 // ==========================================
 const Logic = () => {
   const [lines, setLines] = useState([
@@ -413,7 +400,6 @@ const Logic = () => {
     intervalRef.current = setInterval(() => {
       const randomLog = logs[Math.floor(Math.random() * logs.length)];
       const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false });
-      // keep to last 15 lines for performance
       setLines(prev => {
         const next = [...prev.slice(-14), `[${timestamp}] ${randomLog}`];
         return next;
@@ -457,7 +443,7 @@ const Logic = () => {
 };
 
 // ==========================================
-// MAIN PAGE CONTAINER
+// Main container (note: paddingTop = header height)
 // ==========================================
 const DeepDive = () => {
   const [activeTab, setActiveTab] = useState('physics');
@@ -471,7 +457,8 @@ const DeepDive = () => {
   ];
 
   return (
-    <div className="min-h-screen w-full bg-black text-white overflow-hidden flex">
+    // Replace '72px' with your navbar height if different
+    <div className="min-h-screen w-full bg-black text-white overflow-hidden flex" style={{ paddingTop: '72px' }}>
       {/* --- LEFT COMMAND DECK --- */}
       <div className="w-20 md:w-72 border-r border-white/10 bg-black/50 backdrop-blur-xl flex flex-col z-20">
         <div className="p-6 border-b border-white/10">
@@ -512,7 +499,6 @@ const DeepDive = () => {
 
       {/* --- RIGHT CONTENT AREA --- */}
       <div className="flex-1 relative overflow-hidden flex flex-col p-6 md:p-12">
-        {/* Safe Background Pattern */}
         <div className="absolute inset-0 opacity-[0.05] pointer-events-none"
              style={{ backgroundImage: `radial-gradient(circle at 2px 2px, #10B981 1px, transparent 0)`, backgroundSize: '40px 40px' }}>
         </div>
