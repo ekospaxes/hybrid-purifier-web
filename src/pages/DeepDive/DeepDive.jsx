@@ -10,31 +10,38 @@ import { Link } from 'react-router-dom';
 // ==========================================
 // 0. SHARED UI COMPONENTS
 // ==========================================
-
 const Typewriter = ({ text, delay = 0, className = "" }) => {
   const [display, setDisplay] = useState("");
 
   useEffect(() => {
-    let i = 0;
-    const timer = setTimeout(() => {
-      const interval = setInterval(() => {
+    let interval = null;
+    let timer = null;
+
+    timer = setTimeout(() => {
+      let i = 0;
+      interval = setInterval(() => {
         setDisplay(text.substring(0, i + 1));
         i++;
-        if (i === text.length) clearInterval(interval);
+        if (i >= text.length && interval) {
+          clearInterval(interval);
+          interval = null;
+        }
       }, 30);
-      return () => clearInterval(interval);
     }, delay);
-    return () => clearTimeout(timer);
+
+    return () => {
+      if (timer) clearTimeout(timer);
+      if (interval) clearInterval(interval);
+    };
   }, [text, delay]);
 
   return <span className={`font-mono ${className}`}>{display}</span>;
 };
 
-// SAFE PANEL COMPONENT
 const Panel = ({ children, className = "" }) => (
   <div className={`bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden relative ${className}`}>
     {/* CSS Noise */}
-    <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
+    <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
          style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}>
     </div>
     {children}
@@ -42,71 +49,91 @@ const Panel = ({ children, className = "" }) => (
 );
 
 // ==========================================
-// 1. PHYSICS ENGINE (Fixed Canvas Bug)
+// 1. PHYSICS ENGINE
 // ==========================================
 const PhysicsEngine = () => {
   const canvasRef = useRef(null);
+  const rafRef = useRef(null);
+  const particlesRef = useRef([]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const ctx = canvas.getContext('2d');
-    let w = canvas.width = canvas.offsetWidth;
-    let h = canvas.height = canvas.offsetHeight;
-    let animationFrameId;
 
-    const particles = Array.from({ length: 60 }, () => ({
-      x: w / 2,
-      y: h / 2,
-      angle: Math.random() * Math.PI * 2,
-      radius: Math.random() * 100 + 20,
-      speed: Math.random() * 0.05 + 0.02,
-      size: Math.random() * 2 + 1,
-      color: Math.random() > 0.5 ? '#10B981' : '#555'
-    }));
+    // Initialize size and particles
+    const resize = () => {
+      // ensure CSS layout applied first
+      const w = Math.max(300, canvas.offsetWidth || 600);
+      const h = Math.max(200, canvas.offsetHeight || 400);
+      canvas.width = w;
+      canvas.height = h;
+
+      // regenerate particles so radius bounds match new size
+      particlesRef.current = Array.from({ length: 60 }, () => ({
+        x: w / 2,
+        y: h / 2,
+        angle: Math.random() * Math.PI * 2,
+        radius: Math.random() * 100 + 20,
+        speed: Math.random() * 0.05 + 0.02,
+        size: Math.random() * 2 + 1,
+        color: Math.random() > 0.5 ? '#10B981' : '#555'
+      }));
+    };
+
+    resize();
+    window.addEventListener('resize', resize);
+
+    let w = canvas.width;
+    let h = canvas.height;
 
     const animate = () => {
-      ctx.fillStyle = 'rgba(0,0,0,0.2)';
+      // refresh current size each frame (handles e.g. layout changes)
+      w = canvas.width;
+      h = canvas.height;
+
+      // trailing background for motion blur effect (tunable)
+      ctx.fillStyle = 'rgba(0,0,0,0.18)';
       ctx.fillRect(0, 0, w, h);
 
-      particles.forEach(p => {
+      const particles = particlesRef.current;
+      const maxRadius = Math.min(w, h) / 2 - 20;
+
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
         p.angle += p.speed;
         p.radius += 0.5;
-        p.x = w / 2 + Math.cos(p.angle) * p.radius;
-        p.y = h / 2 + Math.sin(p.angle) * p.radius;
 
-        if (p.radius > Math.min(w, h) / 2 - 20) {
+        if (p.radius > maxRadius) {
           p.radius = Math.random() * 50;
         }
+
+        p.x = w / 2 + Math.cos(p.angle) * p.radius;
+        p.y = h / 2 + Math.sin(p.angle) * p.radius;
 
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         ctx.fillStyle = p.color;
         ctx.fill();
-      });
+      }
 
+      // central ring
       ctx.beginPath();
       ctx.arc(w / 2, h / 2, 30, 0, Math.PI * 2);
       ctx.strokeStyle = '#10B981';
       ctx.lineWidth = 2;
       ctx.stroke();
 
-      animationFrameId = requestAnimationFrame(animate);
+      rafRef.current = requestAnimationFrame(animate);
     };
-    animate();
 
-    const handleResize = () => {
-      if (canvas) {
-        w = canvas.width = canvas.offsetWidth;
-        h = canvas.height = canvas.offsetHeight;
-      }
-    };
-    window.addEventListener('resize', handleResize);
+    rafRef.current = requestAnimationFrame(animate);
 
     return () => {
-      window.removeEventListener('resize', handleResize);
-      cancelAnimationFrame(animationFrameId);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      window.removeEventListener('resize', resize);
     };
   }, []);
 
@@ -126,8 +153,10 @@ const PhysicsEngine = () => {
       <div className="grid lg:grid-cols-3 gap-6 flex-1 min-h-0">
         <Panel className="lg:col-span-2 relative group min-h-[300px]">
           <div className="absolute top-4 left-4 z-10 text-[10px] font-mono text-eko-emerald border border-eko-emerald/30 px-2 py-1 rounded bg-black/50">LIVE RENDER</div>
-          {/* FIXED: Changed 'anvas' to 'canvas' */}
-          <canvas ref={canvasRef} className="w-full h-full opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
+          <canvas
+            ref={canvasRef}
+            className="w-full h-full block opacity-60 group-hover:opacity-100 transition-opacity duration-500"
+          />
         </Panel>
 
         <div className="space-y-4">
@@ -159,8 +188,22 @@ const PhysicsEngine = () => {
 // 2. CHEMISTRY REACTOR
 // ==========================================
 const ChemicalReactor = () => {
+  const containerRef = useRef(null);
+  const animeInstanceRef = useRef(null);
+
   useEffect(() => {
-    anime({
+    // position radicals initially in the container center if possible
+    const container = containerRef.current;
+    if (container) {
+      const rect = container.getBoundingClientRect();
+      const radicalEls = container.querySelectorAll('.radical');
+      radicalEls.forEach(el => {
+        el.style.top = `${rect.height / 2}px`;
+        el.style.left = `${rect.width / 2}px`;
+      });
+    }
+
+    animeInstanceRef.current = anime({
       targets: '.radical',
       translateX: () => anime.random(-40, 40),
       translateY: () => anime.random(-40, 40),
@@ -170,6 +213,18 @@ const ChemicalReactor = () => {
       loop: true,
       easing: 'easeOutExpo'
     });
+
+    return () => {
+      // kill anime instance to avoid stray loops
+      if (animeInstanceRef.current && animeInstanceRef.current.pause) {
+        try { animeInstanceRef.current.pause(); } catch (e) { /* noop */ }
+      }
+      // cleanup any inline transform state
+      const reds = container ? container.querySelectorAll('.radical') : [];
+      reds.forEach(el => {
+        el.style.transform = '';
+      });
+    };
   }, []);
 
   return (
@@ -193,11 +248,15 @@ const ChemicalReactor = () => {
               <div className="text-purple-400 mt-2">h⁺ + H₂O → H⁺ + •OH</div>
             </div>
           </div>
-          <div className="relative h-32 w-full bg-black/40 rounded-lg overflow-hidden flex items-center justify-center border border-white/5">
+          <div ref={containerRef} className="relative h-32 w-full bg-black/40 rounded-lg overflow-hidden flex items-center justify-center border border-white/5">
             <div className="absolute inset-0 bg-purple-500/5 animate-pulse" />
             <div className="w-1 h-full bg-purple-500/50 blur-md absolute left-1/2 -translate-x-1/2" />
             {[...Array(12)].map((_, i) => (
-              <div key={i} className="radical absolute w-2 h-2 bg-white rounded-full shadow-[0_0_10px_white]" />
+              <div
+                key={i}
+                className="radical absolute w-2 h-2 bg-white rounded-full shadow-[0_0_10px_white]"
+                style={{ top: '50%', left: '50%' }}
+              />
             ))}
           </div>
         </Panel>
@@ -299,12 +358,12 @@ const Sensors = () => {
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 flex-1 relative">
         <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden rounded-xl">
           <motion.div
-            animate={{ top: ["0%", "100%"] }}
+            animate={{ top: ["-10%", "120%"] }}
             transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
             className="absolute left-0 w-full h-px bg-eko-emerald/50 shadow-[0_0_20px_#10B981]"
           />
         </div>
-        
+
         {sensorData.map((s, i) => (
           <Panel key={i} className="p-6 flex flex-col justify-between hover:border-eko-emerald/50 transition-colors group z-10">
             <div className="flex justify-between items-start">
@@ -336,6 +395,7 @@ const Logic = () => {
     "[NETW] WIFI CONNECTING (SSID: EKO_LAB)...",
     "[NETW] IP ASSIGNED: 192.168.1.42"
   ]);
+  const intervalRef = useRef(null);
 
   useEffect(() => {
     const logs = [
@@ -349,13 +409,19 @@ const Logic = () => {
       "[WAIT] SYNCING..."
     ];
 
-    const interval = setInterval(() => {
+    intervalRef.current = setInterval(() => {
       const randomLog = logs[Math.floor(Math.random() * logs.length)];
       const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false });
-      setLines(prev => [...prev.slice(-14), `[${timestamp}] ${randomLog}`]);
+      // keep to last 15 lines for performance
+      setLines(prev => {
+        const next = [...prev.slice(-14), `[${timestamp}] ${randomLog}`];
+        return next;
+      });
     }, 800);
 
-    return () => clearInterval(interval);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
   }, []);
 
   return (
@@ -374,8 +440,10 @@ const Logic = () => {
           {lines.map((line, i) => (
             <motion.div
               key={i}
-              initial={{ opacity: 0, x: -10 }}
+              layout
+              initial={{ opacity: 0, x: -6 }}
               animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.18 }}
               className={`${line.includes("CRITICAL") ? "text-red-500 font-bold" : line.includes("ALRT") ? "text-yellow-400" : "text-eko-emerald"}`}
             >
               {line}
