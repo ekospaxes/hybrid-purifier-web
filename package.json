@@ -14,7 +14,7 @@
     "@react-three/fiber": "^9.4.0",
     "@react-three/postprocessing": "^3.0.4",
     "@types/three": "^0.181.0",
-    "animejs": "^3.2.1",
+    "animejs": "^3.2.2",
     "clsx": "^2.1.1",
     "framer-motion": "^12.23.24",
     "leaflet": "^1.9.4",

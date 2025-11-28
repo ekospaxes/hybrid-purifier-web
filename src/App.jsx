@@ -15,6 +15,7 @@ import Simulator from './pages/Simulator/Simulator';
 import SpecsPage from './pages/SpecsPage/SpecsPage';
 import DashboardPage from './pages/Dashboard/DashboardPage';
 import DeepDive from './pages/DeepDive/DeepDive';
+import CarbonRefinery from './pages/CarbonRefinery/CarbonRefinery'; // <--- NEW IMPORT
 
 // --- HELPER: SCROLL TO TOP ON ROUTE CHANGE ---
 const ScrollToTop = () => {
@@ -31,13 +32,14 @@ function AppContent() {
 
   useEffect(() => {
     // 1. DISABLE SMOOTH SCROLL ON 3D PAGES
-    // We disable Lenis on '/reveal' because the 3D sticky scroll relies on native browser behavior.
-    if (location.pathname === '/reveal') return;
+    // Disable Lenis on 3D pages that handle their own scrolling or are full-screen
+    const is3DPage = ['/reveal', '/simulator', '/refinery'].includes(location.pathname);
+    if (is3DPage) return;
 
-    // 2. CONFIGURE LENIS (Luxurious Smooth Scroll)
+    // 2. CONFIGURE LENIS
     const lenis = new Lenis({
       duration: 1.2,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // "Expo Out" easing
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       smoothWheel: true,
       touchMultiplier: 2,
     });
@@ -56,12 +58,12 @@ function AppContent() {
 
   return (
     <div className="antialiased selection:bg-emerald-500/30 selection:text-white bg-[#050505] min-h-screen flex flex-col">
-      {/* Cinematic Grain Overlay (Optional) */}
+      {/* Cinematic Grain Overlay */}
       <div className="fixed inset-0 pointer-events-none z-[9999] opacity-[0.03] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] mix-blend-overlay" />
       
       <ScrollToTop />
       
-      {/* Navbar - Fixed Z-Index to sit above 3D canvas */}
+      {/* Navbar - Fixed Z-Index */}
       <div className="relative z-50">
         <Navbar />
       </div>
@@ -69,12 +71,13 @@ function AppContent() {
       <main className="flex-grow">
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/reveal" element={<ProductReveal />} /> {/* The 3D Page */}
+          <Route path="/reveal" element={<ProductReveal />} />
           <Route path="/specs" element={<SpecsPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/simulator" element={<Simulator />} />
           <Route path="/coming-soon" element={<ComingSoon />} />
-          <Route path="/deep-dive" element={<DeepDive />} /> 
+          <Route path="/deep-dive" element={<DeepDive />} />
+          <Route path="/refinery" element={<CarbonRefinery />} /> {/* <--- NEW ROUTE */}
           
           {/* Fallback */}
           <Route path="*" element={<Home />} /> 
