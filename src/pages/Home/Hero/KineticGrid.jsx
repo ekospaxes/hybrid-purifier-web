@@ -13,12 +13,11 @@ const KineticGrid = () => {
     
     const spacing = 35; 
     let mouse = { x: -1000, y: -1000 };
+    let time = 0; 
     
-    // Color Palette (RGB for interpolation)
-    // Emerald: #10B981 -> (16, 185, 129)
-    // Dark Blue: #3b82f6 -> (59, 130, 246) - roughly based on the text gradient
-    const c1 = { r: 16, g: 185, b: 129 };
-    const c2 = { r: 59, g: 130, b: 246 };
+    // Color Palette
+    const c1 = { r: 16, g: 185, b: 129 }; // Emerald
+    const c2 = { r: 59, g: 130, b: 246 }; // Blue
 
     const init = () => {
       width = canvas.width = window.innerWidth;
@@ -36,7 +35,6 @@ const KineticGrid = () => {
             baseX: i * spacing + spacing / 2,
             baseY: j * spacing + spacing / 2,
             size: 1.5,
-            // Phase allows each particle to pulse independently
             phase: Math.random() * Math.PI * 2,
             vx: 0,
             vy: 0,
@@ -49,36 +47,42 @@ const KineticGrid = () => {
 
     const animate = () => {
       ctx.clearRect(0, 0, width, height);
+      time += 0.02; 
       
-      // Physics Constants
-      const mouseRadius = 300; // How far the "light" reaches
+      const mouseRadius = 350; 
       const returnForce = 0.08;
       const damping = 0.9;
 
       particles.forEach(p => {
-        // 1. Calculate Distance & Intensity
+        // 1. PHYSICAL SINE WAVE (The "Breathing")
+        const wave = Math.sin(p.col * 0.1 + p.row * 0.1 + time) * 0.5;
+        p.vx += Math.cos(time + p.row * 0.1) * 0.02;
+
+        // 2. SLANTED HIGHLIGHT (The "Scanline")
+        // Calculate a diagonal value based on position
+        const diagonal = (p.x + p.y) * 0.002;
+        // Create a moving wave based on time
+        const scan = Math.sin(diagonal - time * 0.8);
+        // Sharpen the wave to make it a distinct band
+        const highlightIntensity = Math.pow(Math.max(0, scan), 20); 
+
+        // 3. MOUSE INTERACTION
         const dx = mouse.x - p.x;
         const dy = mouse.y - p.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
         
-        // Intensity: 1.0 at center (mouse), 0.0 at edge of radius
-        let intensity = 0;
+        let mouseIntensity = 0;
         if (distance < mouseRadius) {
-            intensity = 1 - (distance / mouseRadius);
-            // Non-linear falloff for a glowing look
-            intensity = intensity * intensity; 
-        }
-
-        // 2. Mouse Interaction (Subtle Repulsion)
-        if (distance < mouseRadius) {
+            mouseIntensity = 1 - (distance / mouseRadius);
+            mouseIntensity = mouseIntensity * mouseIntensity;
+            
             const force = (mouseRadius - distance) / mouseRadius;
             const angle = Math.atan2(dy, dx);
-            // Push away slightly
-            p.vx -= Math.cos(angle) * force * 0.5;
-            p.vy -= Math.sin(angle) * force * 0.5;
+            p.vx -= Math.cos(angle) * force * 0.6;
+            p.vy -= Math.sin(angle) * force * 0.6;
         }
 
-        // 3. Physics Update (Return to Grid)
+        // 4. PHYSICS UPDATE
         const homeDx = p.baseX - p.x;
         const homeDy = p.baseY - p.y;
         p.vx += homeDx * returnForce;
@@ -88,32 +92,45 @@ const KineticGrid = () => {
         p.x += p.vx;
         p.y += p.vy;
 
-        // 4. Color & Gradient Logic
-        // The closer the mouse, the faster the phase advances
-        // Base speed: 0.02, Max added speed: 0.2
-        const speed = 0.02 + (intensity * 0.25);
-        p.phase += speed;
-
-        // Oscillate between 0 and 1 based on phase
+        // 5. COLOR & DRAWING
+        // Speed up cycling near mouse
+        p.phase += 0.02 + (mouseIntensity * 0.2);
         const mix = (Math.sin(p.phase) + 1) / 2;
 
         ctx.beginPath();
 
-        if (intensity > 0.01) {
-            // Active State: Interpolate Color
+        // Combined Intensity: Mouse Proximity OR Slanted Highlight
+        // The highlight is white/bright grey, the mouse is Emerald/Blue
+        
+        if (mouseIntensity > 0.01) {
+            // -- MOUSE ZONE (Gradient) --
             const r = c1.r + (c2.r - c1.r) * mix;
             const g = c1.g + (c2.g - c1.g) * mix;
             const b = c1.b + (c2.b - c1.b) * mix;
             
-            ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${0.5 + intensity * 0.5})`;
+            // Add white highlight from the scan to the gradient
+            const scanBoost = highlightIntensity * 100; 
             
-            // Size swells with intensity
-            const dynamicSize = p.size + (intensity * 2.5);
+            ctx.fillStyle = `rgba(${Math.min(255, r + scanBoost)}, ${Math.min(255, g + scanBoost)}, ${Math.min(255, b + scanBoost)}, ${0.4 + mouseIntensity * 0.6})`;
+            
+            const dynamicSize = p.size + wave + (mouseIntensity * 3);
+            ctx.arc(p.x, p.y, Math.max(0.5, dynamicSize), 0, Math.PI * 2);
+            
+        } else if (highlightIntensity > 0.1) {
+            // -- SCANLINE ZONE (No Mouse) --
+            // Make dots brighter grey/white as the scan passes
+            const brightness = 34 + (highlightIntensity * 100); 
+            ctx.fillStyle = `rgb(${brightness}, ${brightness}, ${brightness})`;
+            
+            // Slight size bump for the scan
+            const dynamicSize = Math.max(1, p.size + wave + (highlightIntensity * 1.5));
             ctx.arc(p.x, p.y, dynamicSize, 0, Math.PI * 2);
+            
         } else {
-            // Idle State: Dark Dot
+            // -- IDLE ZONE --
             ctx.fillStyle = '#222';
-            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            const dynamicSize = Math.max(1, p.size + wave); 
+            ctx.arc(p.x, p.y, dynamicSize, 0, Math.PI * 2);
         }
         
         ctx.fill();
