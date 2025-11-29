@@ -10,9 +10,15 @@ const KineticGrid = () => {
     
     let width, height;
     let particles = [];
+    
     const spacing = 35; 
     let mouse = { x: -1000, y: -1000 };
-    let time = 0;
+    
+    // Color Palette (RGB for interpolation)
+    // Emerald: #10B981 -> (16, 185, 129)
+    // Dark Blue: #3b82f6 -> (59, 130, 246) - roughly based on the text gradient
+    const c1 = { r: 16, g: 185, b: 129 };
+    const c2 = { r: 59, g: 130, b: 246 };
 
     const init = () => {
       width = canvas.width = window.innerWidth;
@@ -30,9 +36,11 @@ const KineticGrid = () => {
             baseX: i * spacing + spacing / 2,
             baseY: j * spacing + spacing / 2,
             size: 1.5,
+            // Phase allows each particle to pulse independently
+            phase: Math.random() * Math.PI * 2,
             vx: 0,
             vy: 0,
-            col: i, // Store column index for wave math
+            col: i,
             row: j
           });
         }
@@ -41,63 +49,73 @@ const KineticGrid = () => {
 
     const animate = () => {
       ctx.clearRect(0, 0, width, height);
-      time += 0.02; // Global time for waves
       
-      const mouseRadius = 150;
+      // Physics Constants
+      const mouseRadius = 300; // How far the "light" reaches
       const returnForce = 0.08;
-      const cursorForce = 0.5;
       const damping = 0.9;
 
-      ctx.fillStyle = '#333';
-
       particles.forEach(p => {
-        // 1. Mouse Interaction (Repulsion)
+        // 1. Calculate Distance & Intensity
         const dx = mouse.x - p.x;
         const dy = mouse.y - p.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
-
+        
+        // Intensity: 1.0 at center (mouse), 0.0 at edge of radius
+        let intensity = 0;
         if (distance < mouseRadius) {
-          const forceDirectionX = dx / distance;
-          const forceDirectionY = dy / distance;
-          const force = (mouseRadius - distance) / mouseRadius;
-          p.vx -= forceDirectionX * force * cursorForce;
-          p.vy -= forceDirectionY * force * cursorForce;
+            intensity = 1 - (distance / mouseRadius);
+            // Non-linear falloff for a glowing look
+            intensity = intensity * intensity; 
         }
 
-        // 2. Automatic Wave (The "Breathing" Effect)
-        // A sine wave traveling diagonally
-        const wave = Math.sin(p.col * 0.1 + p.row * 0.1 + time) * 0.5;
-        // Apply subtle offset based on wave
-        p.vx += Math.cos(time + p.row * 0.1) * 0.02;
+        // 2. Mouse Interaction (Subtle Repulsion)
+        if (distance < mouseRadius) {
+            const force = (mouseRadius - distance) / mouseRadius;
+            const angle = Math.atan2(dy, dx);
+            // Push away slightly
+            p.vx -= Math.cos(angle) * force * 0.5;
+            p.vy -= Math.sin(angle) * force * 0.5;
+        }
 
-        // 3. Physics (Return to home)
+        // 3. Physics Update (Return to Grid)
         const homeDx = p.baseX - p.x;
         const homeDy = p.baseY - p.y;
         p.vx += homeDx * returnForce;
         p.vy += homeDy * returnForce;
-
         p.vx *= damping;
         p.vy *= damping;
-
         p.x += p.vx;
         p.y += p.vy;
 
-        // Drawing
+        // 4. Color & Gradient Logic
+        // The closer the mouse, the faster the phase advances
+        // Base speed: 0.02, Max added speed: 0.2
+        const speed = 0.02 + (intensity * 0.25);
+        p.phase += speed;
+
+        // Oscillate between 0 and 1 based on phase
+        const mix = (Math.sin(p.phase) + 1) / 2;
+
         ctx.beginPath();
-        const speed = Math.abs(p.vx) + Math.abs(p.vy);
-        // Size grows with speed OR with the automatic wave
-        const dynamicSize = Math.max(1, Math.min(p.size + speed * 0.5 + wave, 5));
-        
-        ctx.arc(p.x, p.y, dynamicSize, 0, Math.PI * 2);
-        
-        // Color Logic: Speed triggers Green, Wave triggers slight Grey shift
-        if (speed > 1.5) {
-            ctx.fillStyle = '#10B981'; // Active Emerald
-        } else if (wave > 0.4) {
-            ctx.fillStyle = '#555'; // Wave Highlight
+
+        if (intensity > 0.01) {
+            // Active State: Interpolate Color
+            const r = c1.r + (c2.r - c1.r) * mix;
+            const g = c1.g + (c2.g - c1.g) * mix;
+            const b = c1.b + (c2.b - c1.b) * mix;
+            
+            ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${0.5 + intensity * 0.5})`;
+            
+            // Size swells with intensity
+            const dynamicSize = p.size + (intensity * 2.5);
+            ctx.arc(p.x, p.y, dynamicSize, 0, Math.PI * 2);
         } else {
-            ctx.fillStyle = '#222'; // Base Dark
+            // Idle State: Dark Dot
+            ctx.fillStyle = '#222';
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         }
+        
         ctx.fill();
       });
 
@@ -105,6 +123,7 @@ const KineticGrid = () => {
     };
 
     const handleResize = () => init();
+    
     const handleMouseMove = (e) => {
       const rect = canvas.getBoundingClientRect();
       mouse.x = e.clientX - rect.left;
