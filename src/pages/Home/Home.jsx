@@ -8,25 +8,29 @@ import EcosystemMap from '../../components/ui/EcosystemMap';
 
 const Home = () => {
   return (
-    <main className="w-full bg-eko-bg">
+    <main className="w-full bg-eko-bg selection:bg-eko-emerald selection:text-black">
       <Hero />
       
-      <div id="technology">
-        <Technology />
-      </div>
+      {/* Added extra padding-top to separate the interactive Hero from the content */}
+      <div className="relative z-10 bg-black">
+        
+        <div id="technology">
+          <Technology />
+        </div>
 
-      <div id="sensors">
-        <Sensors />
-      </div>
+        <div id="sensors">
+          <Sensors />
+        </div>
 
-      <EcosystemMap /> 
+        <EcosystemMap /> 
 
-      <div id="impact">
-        <Impact />
-      </div>
-      
-      <div id="specs">
-        <Specs />
+        <div id="impact">
+          <Impact />
+        </div>
+        
+        <div id="specs">
+          <Specs />
+        </div>
       </div>
     </main>
   );

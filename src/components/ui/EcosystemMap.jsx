@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Cpu, Leaf, Wind, Database, Globe } from 'lucide-react';
 
 // --- CONFIGURATION ---
+// We use a 100x100 coordinate system for the lines
 const nodes = [
   {
     id: 'bio',
@@ -10,7 +11,7 @@ const nodes = [
     desc: 'Chlorella Pyrenoidosa',
     icon: Leaf,
     color: '#10B981', // Emerald
-    x: '20%', y: '20%', 
+    x: 20, y: 20, // CHANGED: Numbers, not strings
     delay: 0.2
   },
   {
@@ -19,7 +20,7 @@ const nodes = [
     desc: 'Cyclonic Intake',
     icon: Wind,
     color: '#3b82f6', // Blue
-    x: '80%', y: '20%', 
+    x: 80, y: 20,
     delay: 0.4
   },
   {
@@ -28,7 +29,7 @@ const nodes = [
     desc: 'MQTT Telemetry',
     icon: Database,
     color: '#f59e0b', // Amber
-    x: '20%', y: '80%', 
+    x: 20, y: 80,
     delay: 0.6
   },
   {
@@ -37,7 +38,7 @@ const nodes = [
     desc: 'Carbon Network',
     icon: Globe,
     color: '#8b5cf6', // Violet
-    x: '80%', y: '80%', 
+    x: 80, y: 80,
     delay: 0.8
   }
 ];
@@ -46,18 +47,21 @@ const nodes = [
 
 const GlowingLine = ({ start, end, color, delay }) => {
   return (
-    <svg className="absolute inset-0 w-full h-full pointer-events-none overflow-visible">
+    // SVG is absolute and fills container, but uses 0-100 coordinate space
+    <svg className="absolute inset-0 w-full h-full pointer-events-none overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
       <motion.path
+        // FIX: Using raw numbers here. "50" means center.
         d={`M ${start.x} ${start.y} C ${start.x} 50, ${end.x} 50, ${end.x} ${end.y}`}
         fill="none"
         stroke={color}
-        strokeWidth="2"
+        strokeWidth="0.5" // Thinner stroke relative to 100px viewbox, roughly 2px visual
+        vectorEffect="non-scaling-stroke" // Keeps stroke constant despite scaling
         strokeLinecap="round"
         initial={{ pathLength: 0, opacity: 0 }}
         whileInView={{ pathLength: 1, opacity: 0.6 }}
         viewport={{ once: true }}
         transition={{ duration: 1.5, delay: delay, ease: "easeInOut" }}
-        style={{ filter: `drop-shadow(0 0 8px ${color})` }}
+        style={{ filter: `drop-shadow(0 0 2px ${color})` }}
       />
     </svg>
   );
@@ -67,7 +71,7 @@ const MapNode = ({ node, isCenter = false }) => {
   return (
     <motion.div
       className="absolute transform -translate-x-1/2 -translate-y-1/2 z-10"
-      style={{ left: node.x, top: node.y }}
+      style={{ left: `${node.x}%`, top: `${node.y}%` }} // CSS needs % strings
       initial={{ scale: 0, opacity: 0 }}
       whileInView={{ scale: 1, opacity: 1 }}
       viewport={{ once: true }}
@@ -100,7 +104,7 @@ const MapNode = ({ node, isCenter = false }) => {
         </div>
 
         {/* Text Label */}
-        <div className={`absolute ${node.y === '50%' ? 'top-28' : 'top-full mt-4'} w-48 text-center pointer-events-none`}>
+        <div className={`absolute ${node.y === 50 ? 'top-28' : 'top-full mt-4'} w-48 text-center pointer-events-none`}>
           <motion.h3 
             initial={{ opacity: 0, y: 10 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -125,13 +129,8 @@ const MapNode = ({ node, isCenter = false }) => {
 };
 
 const EcosystemMap = () => {
-  const centerPoint = { x: '50%', y: '50%' };
-  const endPoints = [
-    { x: '20%', y: '20%' }, 
-    { x: '80%', y: '20%' }, 
-    { x: '20%', y: '80%' }, 
-    { x: '80%', y: '80%' }, 
-  ];
+  // Center is at 50, 50 in our 100x100 system
+  const centerPoint = { x: 50, y: 50 };
 
   return (
     <section className="relative py-32 px-6 overflow-hidden bg-black">
@@ -149,24 +148,27 @@ const EcosystemMap = () => {
       <div className="max-w-5xl mx-auto h-[500px] md:h-[600px] relative bg-[#050505] rounded-3xl border border-white/5 shadow-2xl overflow-hidden">
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px]" />
 
+        {/* SVG Container for Lines */}
         <div className="absolute inset-0 z-0">
           {nodes.map((node, i) => (
-            <GlowingLine key={i} start={centerPoint} end={endPoints[i]} color={node.color} delay={node.delay} />
+            <GlowingLine key={i} start={centerPoint} end={{ x: node.x, y: node.y }} color={node.color} delay={node.delay} />
           ))}
         </div>
 
+        {/* Center Node */}
         <MapNode 
           node={{
             title: "The Hybrid Core",
             desc: "Class X 120L Mainframe",
             icon: Cpu,
             color: '#10B981',
-            x: '50%', y: '50%',
+            x: 50, y: 50,
             delay: 0
           }} 
           isCenter={true} 
         />
 
+        {/* Outer Nodes */}
         {nodes.map((node) => (
           <MapNode key={node.id} node={node} />
         ))}
